@@ -1,0 +1,164 @@
+[
+  {
+    "id": "DEMO-REL-nato-article5",
+    "source": "DEMO-ACT-nato",
+    "target": "DEMO-ACT-latvia",
+    "type": "COLLECTIVE_DEFENSE",
+    "strength": 0.95,
+    "description": "NATO Article 5 collective defense guarantee — an attack on Latvia is an attack on all NATO members",
+    "evidence": ["North Atlantic Treaty Article 5", "2014 Wales Summit reassurance", "2016 Warsaw Summit EFP deployment", "2022 Madrid Summit force posture upgrade"]
+  },
+  {
+    "id": "DEMO-REL-nato-estonia",
+    "source": "DEMO-ACT-nato",
+    "target": "DEMO-ACT-estonia",
+    "type": "COLLECTIVE_DEFENSE",
+    "strength": 0.95,
+    "description": "NATO Article 5 collective defense — Estonia is a frontline NATO ally with UK-led battlegroup",
+    "evidence": ["North Atlantic Treaty Article 5", "EFP Estonia battlegroup (UK-led)", "NATO CCDCOE in Tallinn"]
+  },
+  {
+    "id": "DEMO-REL-nato-lithuania",
+    "source": "DEMO-ACT-nato",
+    "target": "DEMO-ACT-lithuania",
+    "type": "COLLECTIVE_DEFENSE",
+    "strength": 0.95,
+    "description": "NATO Article 5 collective defense — Lithuania controls southern Suwalki approach",
+    "evidence": ["North Atlantic Treaty Article 5", "EFP Lithuania battlegroup (German-led)", "Suwalki Gap defense planning"]
+  },
+  {
+    "id": "DEMO-REL-us-nato-leadership",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-nato",
+    "type": "LEADS",
+    "strength": 0.9,
+    "description": "US provides SACEUR, strategic enablers, nuclear umbrella, and majority of rapid reinforcement capability",
+    "evidence": ["SACEUR dual-hatted US/NATO", "US European Deterrence Initiative", "V Corps forward deployment", "Nuclear sharing arrangements"]
+  },
+  {
+    "id": "DEMO-REL-us-poland",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-poland",
+    "type": "ALLIANCE",
+    "strength": 0.9,
+    "description": "Enhanced bilateral defense relationship — V Corps HQ in Poznan, Aegis Ashore, rotational forces",
+    "evidence": ["V Corps forward HQ Poznan", "Aegis Ashore Redzikowo", "Enhanced Defense Cooperation Agreement", "Abrams tank pre-positioned stocks"]
+  },
+  {
+    "id": "DEMO-REL-us-uk",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-uk",
+    "type": "ALLIANCE",
+    "strength": 0.95,
+    "description": "Special relationship — Five Eyes intelligence, nuclear cooperation, NATO interoperability",
+    "evidence": ["Five Eyes Agreement", "Mutual Defense Agreement (nuclear)", "NATO interoperability standards", "JEF cooperation"]
+  },
+  {
+    "id": "DEMO-REL-uk-jef",
+    "source": "DEMO-ACT-uk",
+    "target": "DEMO-ACT-jef",
+    "type": "LEADS",
+    "strength": 0.85,
+    "description": "UK is framework nation for the Joint Expeditionary Force — 10-nation Northern European rapid reaction grouping",
+    "evidence": ["JEF founding (2014)", "Baltic deployments", "High North exercises", "ISR contribution to EFDL"]
+  },
+  {
+    "id": "DEMO-REL-canada-efp-latvia",
+    "source": "DEMO-ACT-canada",
+    "target": "DEMO-ACT-mnb-lva",
+    "type": "LEADS",
+    "strength": 0.85,
+    "description": "Canada leads NATO Multinational Brigade Latvia (MNB-LVA) — framework nation under Operation REASSURANCE with ~2,200-2,600 Canadian troops via Task Force Latvia",
+    "evidence": ["Operation REASSURANCE", "Task Force Latvia (TFL)", "EFP Latvia battlegroup leadership since 2017", "Upgraded to Multinational Brigade Latvia (MNB-LVA) July 2024", "~3,000 total personnel from 14 NATO allies", "Camp Adazi base"]
+  },
+  {
+    "id": "DEMO-REL-germany-efp-lithuania",
+    "source": "DEMO-ACT-germany",
+    "target": "DEMO-ACT-lithuania",
+    "type": "SUPPORTS",
+    "strength": 0.8,
+    "description": "Germany leads EFP Lithuania battlegroup — permanent brigade commitment under Zeitenwende",
+    "evidence": ["EFP Lithuania battlegroup leadership", "Permanent brigade commitment (2023)", "Leopard 2 deployment"]
+  },
+  {
+    "id": "DEMO-REL-russia-belarus",
+    "source": "DEMO-ACT-russia",
+    "target": "DEMO-ACT-belarus",
+    "type": "STRATEGIC_PARTNERSHIP",
+    "strength": 0.9,
+    "description": "Union State — de facto military integration, Russian forces stationed in Belarus, joint Zapad exercises",
+    "evidence": ["Union State Treaty", "Russian tactical nuclear deployment to Belarus", "Zapad exercise series", "2022 staging for operations"]
+  },
+  {
+    "id": "DEMO-REL-russia-nato-adversary",
+    "source": "DEMO-ACT-russia",
+    "target": "DEMO-ACT-nato",
+    "type": "ADVERSARIAL",
+    "strength": -0.85,
+    "description": "Strategic adversarial relationship — Russia views NATO expansion as existential threat, NATO views Russian aggression as primary security challenge",
+    "evidence": ["2022 invasion of Ukraine", "NATO-Russia Founding Act suspension", "Nuclear signaling", "Hybrid warfare campaigns"]
+  },
+  {
+    "id": "DEMO-REL-russia-baltics-threat",
+    "source": "DEMO-ACT-russia",
+    "target": "DEMO-ACT-latvia",
+    "type": "THREATENS",
+    "strength": -0.7,
+    "description": "Russian military threat to Baltic states — WMD forces positioned within strike range, ethnic Russian minority exploitation, hybrid warfare",
+    "evidence": ["76th GAAD 100km from border", "Zapad exercise scenarios", "Information warfare targeting Russian minority", "Kaliningrad A2/AD"]
+  },
+  {
+    "id": "DEMO-REL-kaliningrad-a2ad",
+    "source": "DEMO-ACT-kaliningrad",
+    "target": "DEMO-ACT-nato",
+    "type": "DENIES_ACCESS",
+    "strength": -0.8,
+    "description": "Kaliningrad A2/AD bubble — S-400, Iskander-M, and Bastion-P create a denial zone over the Baltic Sea and Suwalki corridor",
+    "evidence": ["S-400 deployment", "Iskander-M SRBM", "Bastion-P coastal defense", "Baltic Fleet naval forces"]
+  },
+  {
+    "id": "DEMO-REL-finland-nato",
+    "source": "DEMO-ACT-finland",
+    "target": "DEMO-ACT-nato",
+    "type": "ALLIANCE",
+    "strength": 0.85,
+    "description": "NATO member since 2023 — 1,300km Russia border doubles NATO's direct exposure, extends EFDL concept north",
+    "evidence": ["NATO accession (2023)", "1,300km border with Russia", "280,000 wartime strength", "Artillery superiority doctrine"]
+  },
+  {
+    "id": "DEMO-REL-sweden-nato",
+    "source": "DEMO-ACT-sweden",
+    "target": "DEMO-ACT-nato",
+    "type": "ALLIANCE",
+    "strength": 0.8,
+    "description": "NATO member since 2024 — Gotland and Baltic Sea control enable reinforcement of Baltic states",
+    "evidence": ["NATO accession (2024)", "Gotland refortification", "Submarine force contribution", "Baltic Sea maritime control"]
+  },
+  {
+    "id": "DEMO-REL-eu-russia-sanctions",
+    "source": "DEMO-ACT-eu",
+    "target": "DEMO-ACT-russia",
+    "type": "SANCTIONS",
+    "strength": -0.7,
+    "description": "EU comprehensive sanctions regime against Russia — economic pressure supporting NATO deterrence posture",
+    "evidence": ["14+ sanctions packages", "Energy import restrictions", "Financial sector sanctions", "Technology export controls"]
+  },
+  {
+    "id": "DEMO-REL-poland-suwalki",
+    "source": "DEMO-ACT-poland",
+    "target": "DEMO-ACT-lithuania",
+    "type": "DEFENDS_WITH",
+    "strength": 0.85,
+    "description": "Joint defense of the Suwalki corridor — Polish-Lithuanian cooperation to keep NATO's land link to the Baltic states open",
+    "evidence": ["Suwalki Gap defense planning", "Joint exercises", "Cross-border logistics agreements", "US force posture in both countries"]
+  },
+  {
+    "id": "DEMO-REL-76gaad-wmd",
+    "source": "DEMO-ACT-ru-76gaard",
+    "target": "DEMO-ACT-ru-wmd",
+    "type": "SUBORDINATE_TO",
+    "strength": 0.95,
+    "description": "76th Guards Air Assault Division is subordinate to Western Military District — provides rapid penetration capability for Baltic operations",
+    "evidence": ["Russian order of battle", "Pskov basing (100km from border)", "VDV integration with WMD planning"]
+  }
+]

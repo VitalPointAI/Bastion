@@ -1,0 +1,72 @@
+[
+  {
+    "id": "DEMO-PS-baltic-shield",
+    "dao_id": "ps-tactical-demo-baltic-shield",
+    "name": "Operation Baltic Shield",
+    "description": "EFDL Sector Latgale — autonomous unmanned engagement area defense against Russian mechanized forward detachment in open terrain",
+    "problem_statement": "Employ autonomous ground platforms in the Unmanned Engagement Area to detect, track, and attrit Russian forward detachment to <30% combat power before manned defenders engage",
+    "echelon": "tactical",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-efp-latvia",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-isr-narva",
+    "dao_id": "ps-tactical-demo-isr-narva",
+    "name": "ISR Collection — Narva Sector",
+    "description": "Persistent ISR coverage of the Estonia-Russia border at Narva using networked autonomous sensors and Five Eyes intelligence sharing",
+    "problem_statement": "Provide continuous ISR coverage of Russian Western Military District movements to support EFDL early warning across the Estonian sector",
+    "echelon": "tactical",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-mnc-ne",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-suwalki-corridor",
+    "dao_id": "ps-tactical-demo-suwalki",
+    "name": "Suwalki Corridor Defense",
+    "description": "Defense of the Suwalki Gap — preventing Russian/Belarusian forces from severing the land link between Poland and the Baltic states",
+    "problem_statement": "Defend the 65km Suwalki corridor to maintain NATO's land line of communication to the Baltic states",
+    "echelon": "tactical",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-mnc-ne",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-counter-ew",
+    "dao_id": "ps-tactical-demo-counter-ew",
+    "name": "Counter-EW Operations",
+    "description": "Electronic warfare countermeasures — maintaining autonomous platform communications and GPS navigation under Russian EW suppression",
+    "problem_statement": "Ensure autonomous platform mesh network resilience and navigation accuracy under active Russian electronic warfare jamming",
+    "echelon": "tactical",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-efp-latvia",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-logistics-poland",
+    "dao_id": "ps-tactical-demo-logistics-poland",
+    "name": "Logistics Corridor — Poland to Latvia",
+    "description": "Sustainment operations supporting EFDL forces via the Via Baltica corridor from Poznan through Lithuania to Latvia",
+    "problem_statement": "Sustain forward-deployed EFDL forces via secure logistics corridor while maintaining Suwalki Gap transit capability",
+    "echelon": "tactical",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-mnc-ne",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  }
+]

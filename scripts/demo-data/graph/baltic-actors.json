@@ -1,0 +1,259 @@
+[
+  {
+    "id": "DEMO-ACT-usa",
+    "name": "United States",
+    "type": "nation",
+    "aliases": ["US", "USA", "America"],
+    "attributes": {
+      "region": "North America / Europe (EUCOM AOR)",
+      "gdp_rank": 1,
+      "capabilities": "Full-spectrum military, nuclear triad, global force projection, V Corps forward-deployed to Poland",
+      "alignment": "NATO alliance leader, SACEUR (dual-hatted)",
+      "role": "Framework nation, theater reserve (V Corps), long-range fires, strategic enablers"
+    }
+  },
+  {
+    "id": "DEMO-ACT-russia",
+    "name": "Russian Federation",
+    "type": "nation",
+    "aliases": ["Russia", "RU", "Kremlin"],
+    "attributes": {
+      "region": "Eurasia",
+      "gdp_rank": 11,
+      "capabilities": "Mechanized forces, A2/AD (Kaliningrad), nuclear arsenal, EW/cyber, Iskander SRBM, S-400",
+      "alignment": "Revisionist power, strategic competitor to NATO",
+      "role": "Primary adversary, Western Military District forces threatening Baltic states"
+    }
+  },
+  {
+    "id": "DEMO-ACT-latvia",
+    "name": "Republic of Latvia",
+    "type": "nation",
+    "aliases": ["Latvia", "LVA"],
+    "attributes": {
+      "region": "Baltic / Northern Europe",
+      "capabilities": "National Armed Forces (NAF), territorial defense, host nation support for NATO EFP",
+      "alignment": "NATO member (2004), EU member",
+      "role": "Host nation for Operation Baltic Shield. EFP Latvia battlegroup (Canadian-led). Latgale region is operational area."
+    }
+  },
+  {
+    "id": "DEMO-ACT-estonia",
+    "name": "Republic of Estonia",
+    "type": "nation",
+    "aliases": ["Estonia", "EST"],
+    "attributes": {
+      "region": "Baltic / Northern Europe",
+      "capabilities": "Estonian Defence Forces, cyber defense excellence, territorial defense, conscription",
+      "alignment": "NATO member (2004), EU member, NATO CCDCOE host",
+      "role": "Northern Baltic anchor. EFP Estonia battlegroup (UK-led). Narva sector — most exposed NATO border."
+    }
+  },
+  {
+    "id": "DEMO-ACT-lithuania",
+    "name": "Republic of Lithuania",
+    "type": "nation",
+    "aliases": ["Lithuania", "LTU"],
+    "attributes": {
+      "region": "Baltic / Northern Europe",
+      "capabilities": "Lithuanian Armed Forces, territorial defense, Suwalki Gap southern anchor",
+      "alignment": "NATO member (2004), EU member",
+      "role": "Southern Baltic anchor. EFP Lithuania battlegroup (German-led). Controls southern approach to Suwalki Gap."
+    }
+  },
+  {
+    "id": "DEMO-ACT-poland",
+    "name": "Republic of Poland",
+    "type": "nation",
+    "aliases": ["Poland", "POL"],
+    "attributes": {
+      "region": "Central / Eastern Europe",
+      "capabilities": "Largest NATO European land force, Leopard 2/K2 tanks, HIMARS, F-35 on order",
+      "alignment": "NATO member (1999), EU member, frontline state",
+      "role": "Southern flank anchor. V Corps forward HQ at Poznan. Suwalki Gap western approach. Key logistics hub."
+    }
+  },
+  {
+    "id": "DEMO-ACT-uk",
+    "name": "United Kingdom",
+    "type": "nation",
+    "aliases": ["UK", "Britain", "GBR"],
+    "attributes": {
+      "region": "Western Europe / Global",
+      "capabilities": "Expeditionary forces, Five Eyes intelligence, JEF framework nation, nuclear deterrent",
+      "alignment": "NATO member, Five Eyes, JEF lead nation",
+      "role": "JEF framework nation for Northern Europe. Leads EFP Estonia battlegroup. ISR/intelligence contributor to Baltic Shield."
+    }
+  },
+  {
+    "id": "DEMO-ACT-germany",
+    "name": "Federal Republic of Germany",
+    "type": "nation",
+    "aliases": ["Germany", "DEU"],
+    "attributes": {
+      "region": "Central Europe",
+      "capabilities": "Bundeswehr modernization, Leopard 2 tanks, Zeitenwende defense spending increase",
+      "alignment": "NATO member, EU leading member",
+      "role": "Leads EFP Lithuania battlegroup. NATO Framework Nation for Baltic defense. Key logistics node."
+    }
+  },
+  {
+    "id": "DEMO-ACT-canada",
+    "name": "Canada",
+    "type": "nation",
+    "aliases": ["CAN"],
+    "attributes": {
+      "region": "North America",
+      "capabilities": "Expeditionary forces, LAV 6.0, Five Eyes intelligence, Arctic warfare",
+      "alignment": "NATO member, Five Eyes, NORAD",
+      "role": "Leads EFP Latvia battlegroup. Primary framework nation for Latvian sector defense."
+    }
+  },
+  {
+    "id": "DEMO-ACT-france",
+    "name": "French Republic",
+    "type": "nation",
+    "aliases": ["France", "FRA"],
+    "attributes": {
+      "region": "Western Europe",
+      "capabilities": "Nuclear deterrent, expeditionary forces, Leclerc tanks, Rafale fighters",
+      "alignment": "NATO member (reintegrated 2009), EU defense leader",
+      "role": "Contributing nation to EFP Romania. Potential reinforcement via NATO Response Force."
+    }
+  },
+  {
+    "id": "DEMO-ACT-belarus",
+    "name": "Republic of Belarus",
+    "type": "nation",
+    "aliases": ["Belarus", "BLR"],
+    "attributes": {
+      "region": "Eastern Europe",
+      "capabilities": "Mechanized forces, Russian forward basing, Zapad exercise integration",
+      "alignment": "Russian Union State, de facto military integration with Russia",
+      "role": "Russian staging area. Southern threat axis to Suwalki Gap. Hosts Russian tactical nuclear weapons."
+    }
+  },
+  {
+    "id": "DEMO-ACT-nato",
+    "name": "North Atlantic Treaty Organization",
+    "type": "alliance",
+    "aliases": ["NATO", "Alliance"],
+    "attributes": {
+      "region": "Euro-Atlantic",
+      "members": 32,
+      "capabilities": "Collective defense (Article 5), integrated military command, nuclear sharing, SACEUR",
+      "alignment": "Defensive alliance",
+      "role": "Framework for Baltic defense. Enhanced Forward Presence. EFDL concept implementation."
+    }
+  },
+  {
+    "id": "DEMO-ACT-jef",
+    "name": "Joint Expeditionary Force",
+    "type": "coalition",
+    "aliases": ["JEF"],
+    "attributes": {
+      "region": "Northern Europe / Baltic / High North",
+      "members": 10,
+      "capabilities": "Rapid deployment, maritime/amphibious, ISR, UK-led multinational force",
+      "alignment": "UK-led Northern European defense grouping",
+      "role": "Rapid reinforcement for Baltic states. ISR contribution to EFDL. Framework for UK-Nordic-Baltic cooperation."
+    }
+  },
+  {
+    "id": "DEMO-ACT-ru-wmd",
+    "name": "Russian Western Military District",
+    "type": "military_unit",
+    "aliases": ["WMD", "ZVO"],
+    "attributes": {
+      "region": "Western Russia / Kaliningrad",
+      "capabilities": "6th Combined Arms Army, 1st Guards Tank Army, 76th Guards Air Assault, Iskander brigades",
+      "alignment": "Russian Armed Forces",
+      "role": "Primary threat force. Provides mechanized formations for Baltic offensive. Forward detachment in current scenario."
+    }
+  },
+  {
+    "id": "DEMO-ACT-ru-76gaard",
+    "name": "76th Guards Air Assault Division",
+    "type": "military_unit",
+    "aliases": ["76th GAAD", "Pskov division"],
+    "attributes": {
+      "region": "Pskov, Russia (100km from Estonian/Latvian border)",
+      "capabilities": "Air assault, BMD-4M, rapid deployment, VDV elite forces",
+      "alignment": "Russian Airborne Forces (VDV)",
+      "role": "Forward detachment source for Baltic Shield scenario. Rapid penetration force. Elements provide the adversary ORBAT."
+    }
+  },
+  {
+    "id": "DEMO-ACT-kaliningrad",
+    "name": "Kaliningrad Garrison",
+    "type": "military_unit",
+    "aliases": ["Kaliningrad", "Baltic Fleet"],
+    "attributes": {
+      "region": "Kaliningrad Oblast (Russian exclave)",
+      "capabilities": "S-400 air defense, Iskander-M SRBM, Baltic Fleet, Bastion-P coastal defense, A2/AD bubble",
+      "alignment": "Russian Armed Forces",
+      "role": "A2/AD threat. Denies NATO air/sea freedom of action over the Baltic. Flanks the Suwalki corridor."
+    }
+  },
+  {
+    "id": "DEMO-ACT-mnb-lva",
+    "name": "NATO Multinational Brigade Latvia",
+    "type": "military_unit",
+    "aliases": ["MNB-LVA", "EFP Latvia", "eFP Latvia Brigade"],
+    "attributes": {
+      "region": "Camp Adazi, Latvia",
+      "strength": "~3,000 personnel from 14 NATO allies",
+      "capabilities": "Combined arms brigade, Canadian-led (Operation REASSURANCE / Task Force Latvia). LAV 6.0, Leopard 2A4M tanks, Italian Ariete/Freccia, Polish Leopard 2PL, Spanish Leopard 2E/Pizarro. Upgraded from battlegroup to brigade July 2024.",
+      "alignment": "NATO Enhanced Forward Presence",
+      "role": "Framework force for Sector Latgale. Provides the manned defensive line behind the Unmanned Engagement Area. Canadian Task Force Latvia provides C2 as framework nation. Contributing nations include Italy, Poland, Spain, Czech Republic, Albania, Denmark, Iceland, Montenegro, Slovakia, Slovenia, Sweden, US."
+    }
+  },
+  {
+    "id": "DEMO-ACT-us-vcorps",
+    "name": "US V Corps",
+    "type": "military_unit",
+    "aliases": ["V Corps", "5th Corps"],
+    "attributes": {
+      "region": "Poznan, Poland (forward HQ)",
+      "capabilities": "Corps-level C2, 2nd Cavalry Regiment (Stryker), 101st Airborne (rotational), long-range fires",
+      "alignment": "US Army Europe and Africa (USAREUR-AF)",
+      "role": "Theater reserve. 2nd Cavalry Regiment provides the US robot asset (US-BOT-01). Stryker-based rapid reaction force."
+    }
+  },
+  {
+    "id": "DEMO-ACT-eu",
+    "name": "European Union",
+    "type": "organization",
+    "aliases": ["EU"],
+    "attributes": {
+      "region": "Europe",
+      "capabilities": "Economic sanctions, PESCO defense cooperation, energy policy, diplomatic leverage",
+      "alignment": "Strategic autonomy, partnership with NATO",
+      "role": "Economic pressure on Russia. Sanctions regime. Energy security coordination for Baltic states."
+    }
+  },
+  {
+    "id": "DEMO-ACT-finland",
+    "name": "Republic of Finland",
+    "type": "nation",
+    "aliases": ["Finland", "FIN"],
+    "attributes": {
+      "region": "Nordic / Northern Europe",
+      "capabilities": "1,300km Russia border, 280,000 wartime strength, artillery excellence, F-35 on order",
+      "alignment": "NATO member (2023), EU member, Nordic Defense Cooperation",
+      "role": "Northern flank. Longest NATO-Russia border. Artillery and territorial defense expertise. Extends the EFDL concept north."
+    }
+  },
+  {
+    "id": "DEMO-ACT-sweden",
+    "name": "Kingdom of Sweden",
+    "type": "nation",
+    "aliases": ["Sweden", "SWE"],
+    "attributes": {
+      "region": "Nordic / Northern Europe",
+      "capabilities": "Gripen fighters, Gotland defense, submarine force, defense industry (Saab)",
+      "alignment": "NATO member (2024), EU member, Nordic Defense Cooperation",
+      "role": "Baltic Sea control. Gotland as key terrain for air/sea denial. Reinforcement corridor for Baltic states."
+    }
+  }
+]

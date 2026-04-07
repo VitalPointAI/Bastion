@@ -1,0 +1,30 @@
+[
+  {
+    "id": "DEMO-PS-eucom-theater",
+    "dao_id": "ps-strategic-demo-eucom",
+    "name": "EUCOM Theater Campaign",
+    "description": "European Deterrence AY26: USEUCOM theater-level campaign plan addressing Russian aggression along NATO's Eastern Flank",
+    "problem_statement": "Deter Russian military action against NATO Baltic states while maintaining alliance cohesion and implementing the Eastern Flank Deterrent Line concept",
+    "echelon": "strategic",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": null,
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-eucom-theater-ops",
+    "dao_id": "ps-strategic-demo-eucom-ops",
+    "name": "EUCOM Theater Campaign (OPERATIONAL)",
+    "description": "European Deterrence AY26: USEUCOM theater-level campaign plan — OPERATIONAL MODE",
+    "problem_statement": "Deter Russian military action against NATO Baltic states while maintaining alliance cohesion and implementing the Eastern Flank Deterrent Line concept",
+    "echelon": "strategic",
+    "classification": "NATO SECRET",
+    "mode": "operational",
+    "parent_problem_set_id": null,
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  }
+]

@@ -30,6 +30,9 @@ node_modules/
 .DS_Store
 *.log
 
+# Claude Code local config (machine-specific)
+.claude/
+
 # Keys and credentials
 *.pem
 *.pub

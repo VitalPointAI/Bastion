@@ -1,0 +1,1 @@
+always use nvm to use a newer version of node

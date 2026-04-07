@@ -1,0 +1,58 @@
+[
+  {
+    "id": "DEMO-PS-mnc-ne",
+    "dao_id": "ps-operational-demo-mnc-ne",
+    "name": "MNC-NE Baltic Defense Plan",
+    "description": "NATO Multinational Corps Northeast — operational-level defense plan for the Baltic states along the Eastern Flank Deterrent Line",
+    "problem_statement": "Integrate multinational forces to defend NATO's Baltic members using the EFDL concept of unmanned engagement areas forward of manned defensive positions",
+    "echelon": "operational",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-eucom-theater",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-efp-latvia",
+    "dao_id": "ps-operational-demo-efp-latvia",
+    "name": "NATO Multinational Brigade Latvia (MNB-LVA)",
+    "description": "Canadian-led Multinational Brigade Latvia (Operation REASSURANCE) — ~3,000 personnel from 14 NATO allies defending Sector Latgale with autonomous UEA integration",
+    "problem_statement": "Defend assigned sector of the EFDL using MNB-LVA combined multinational brigade with autonomous unmanned engagement area forward of the manned defensive line",
+    "echelon": "operational",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-mnc-ne",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-usareur-fires",
+    "dao_id": "ps-operational-demo-usareur-fires",
+    "name": "USAREUR Long-Range Fires",
+    "description": "US Army Europe fires support — precision long-range fires supporting the EFDL unmanned engagement areas across the Baltic theater",
+    "problem_statement": "Provide responsive long-range precision fires to attrit enemy mechanized forces within the unmanned engagement areas",
+    "echelon": "operational",
+    "classification": "NATO SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-eucom-theater",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-mnc-ne-ops",
+    "dao_id": "ps-operational-demo-mnc-ne-ops",
+    "name": "MNC-NE Baltic Defense Plan (OPERATIONAL)",
+    "description": "NATO Multinational Corps Northeast — OPERATIONAL MODE defense plan",
+    "problem_statement": "Integrate multinational forces to defend NATO's Baltic members using the EFDL concept of unmanned engagement areas",
+    "echelon": "operational",
+    "classification": "NATO SECRET",
+    "mode": "operational",
+    "parent_problem_set_id": "DEMO-PS-eucom-theater-ops",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  }
+]

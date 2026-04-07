@@ -1,0 +1,93 @@
+[
+  {
+    "id": "ru-t72b3m-alpha",
+    "designation": "T-72B3M — Alpha",
+    "type": "t-72",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8565,
+      "lng": 27.7100
+    },
+    "echelon": "platoon",
+    "strength": 3,
+    "notes": "Lead MBT, Relikt ERA and Sosna-U fire control. Point vehicle of forward detachment, advancing west along farm track parallel to A12."
+  },
+  {
+    "id": "ru-t72b3m-bravo",
+    "designation": "T-72B3M — Bravo",
+    "type": "t-72",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8550,
+      "lng": 27.7130
+    },
+    "echelon": "platoon",
+    "strength": 3,
+    "notes": "Second MBT, 200m behind Alpha in column. Maintaining 100m lateral offset for dispersion in open terrain."
+  },
+  {
+    "id": "ru-bmp3-01",
+    "designation": "BMP-3 IFV — Charlie",
+    "type": "bmp-3",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8535,
+      "lng": 27.7155
+    },
+    "echelon": "squad",
+    "strength": 9,
+    "notes": "Infantry fighting vehicle, 100mm gun and Kornet ATGM capable. Dismounts estimated 7 personnel. 300m behind lead tanks."
+  },
+  {
+    "id": "ru-bmp3-02",
+    "designation": "BMP-3 IFV — Delta",
+    "type": "bmp-3",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8520,
+      "lng": 27.7175
+    },
+    "echelon": "squad",
+    "strength": 9,
+    "notes": "Second IFV, trailing Charlie by 150m. Likely carrying additional dismounts and ATGM reloads."
+  },
+  {
+    "id": "ru-t80bvm-01",
+    "designation": "T-80BVM — Echo",
+    "type": "t-80",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8505,
+      "lng": 27.7195
+    },
+    "echelon": "section",
+    "strength": 3,
+    "notes": "Gas turbine MBT with thermal sights and Relikt ERA. Trail element lead vehicle — faster sprint speed than T-72s on open ground."
+  },
+  {
+    "id": "ru-btr82-01",
+    "designation": "BTR-82A APC — Foxtrot",
+    "type": "btr-82",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8490,
+      "lng": 27.7215
+    },
+    "echelon": "section",
+    "strength": 11,
+    "notes": "APC with 9 dismounts, 30mm 2A72 autocannon. Rear guard element providing infantry support."
+  },
+  {
+    "id": "ru-btr82-02",
+    "designation": "BTR-82A APC — Golf",
+    "type": "btr-82",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 56.8475,
+      "lng": 27.7235
+    },
+    "echelon": "section",
+    "strength": 11,
+    "notes": "Rear-guard APC, 100m behind Foxtrot. Assessed to carry EW equipment (R-330Zh Zhitel jammer) for GPS/comms suppression."
+  }
+]

@@ -1,0 +1,286 @@
+NATO ENHANCED FORWARD PRESENCE — BALTIC THEATER OF OPERATIONS
+OPERATION BALTIC SHIELD
+OPERATION ORDER 001 — DEFENSE OF THE EASTERN FLANK DETERRENT LINE, SECTOR LATGALE
+
+CLASSIFICATION: NATO SECRET — REL TO LVA, US, UK
+
+REFERENCES:
+  A. Joint Publication 5-0, Joint Planning (2020)
+  B. NATO Allied Command Operations Plan 4571 — Baltic Defense (classified annex)
+  C. NATO Rules of Engagement — SACEUR Standing ROE (SROE-EUR-2026)
+  D. Eastern Flank Deterrent Line Concept of Operations (EFDL-CONOPS v2.1)
+  E. USEUCOM OPLAN — European Deterrence Initiative (EDI)
+
+TIME ZONE USED THROUGHOUT: Zulu (UTC+0) / Local: UTC+3 (EEST)
+
+TASK ORGANIZATION:
+  NATO MULTINATIONAL BRIGADE LATVIA (MNB-LVA) — OPERATION BALTIC SHIELD
+  Framework Nation: Canada (Operation REASSURANCE, Task Force Latvia)
+  Base: Camp Adazi, Latvia
+    Latvian National Armed Forces — Mechanized Infantry Battalion (Host Nation, Full Authority)
+      Robot Assets: LV-BOT-01 (point/advance — unmanned engagement area)
+    Canadian Armed Forces — Task Force Latvia, Lead Company (MNB-LVA Framework Nation)
+      Manned defensive line behind UEA (LAV 6.0, Leopard 2A4M)
+    US Army Europe — 2nd Cavalry Regiment (Stryker), Detachment (Restricted — SACEUR ROE)
+      Robot Assets: US-BOT-01 (overwatch/fire support)
+    British Army — Joint Expeditionary Force (JEF) ISR Element (Observer — intelligence only)
+      Robot Assets: UK-BOT-01 (recon/surveillance)
+    Contributing Nations (MNB-LVA): Italy, Poland, Spain, Czech Republic, others (~14 allies)
+
+---
+
+1. SITUATION
+
+a. AREA OF OPERATIONS
+
+The operational area is a sector of the Eastern Flank Deterrent Line in the Latgale
+region of eastern Latvia, approximately 12km west of the Russian border. The terrain
+is predominantly open agricultural land — flat to gently rolling fields, scattered
+tree lines, and isolated farmsteads. Elevation ranges from 110m to 145m ASL. The
+terrain is highly favorable for mechanized maneuver and provides excellent fields
+of observation for sensor-equipped autonomous platforms.
+
+The sector encompasses a 2km-deep Unmanned Engagement Area (UEA) forward of the
+main NATO defensive line. The UEA is designed to channel, detect, and attrit
+advancing enemy mechanized forces using autonomous ground platforms, networked
+sensors, and long-range precision fires before manned defenders engage.
+
+Key terrain features:
+  — Open farm fields providing unobstructed 1500m+ lines of sight
+  — Tree line running N-S at grid 56.849N, 27.698E (natural engagement boundary)
+  — Farm track network providing mobility corridors for autonomous platforms
+  — Gentle ridge at 56.852N (northern sector) providing observation advantage
+
+b. ENEMY FORCES
+
+Intelligence assessment as of D-Day minus 12 hours indicates elements of the
+Russian Western Military District have crossed the Latvian border in the Zilupe
+sector and are advancing west along the A12 corridor toward Rezekne.
+
+Enemy Order of Battle (current assessment — forward detachment):
+  Lead element:  2x T-72B3M Main Battle Tanks (modernized, Relikt ERA)
+                 2x BMP-3 Infantry Fighting Vehicles (100mm gun, ATGM capable)
+  Trail element: 1x T-80BVM Main Battle Tank (gas turbine, thermal sights)
+                 2x BTR-82A Armored Personnel Carriers (30mm autocannon)
+  Total strength: 7 armored/mechanized vehicles, estimated 45-55 personnel
+  Echelon: Reinforced company forward detachment (battalion advance guard)
+  Movement axis: A12 highway corridor → south of Rezekne → Latgale sector
+
+Enemy Intent: Seize key road junctions in the Latgale region to establish a
+lodgement enabling follow-on forces to advance on Rezekne and ultimately Riga.
+Secondary objective: cut NATO lateral supply routes to deny reinforcement of
+the Baltic states from Poland via the Suwalki corridor.
+
+Enemy Capabilities: Direct fire to 3000m (T-72B3M with Sosna-U), dismounted
+assault with RPG support, EW suppression of GPS and tactical communications.
+Limited organic air defense (SA-18 MANPADS with dismounts). Russian air
+superiority NOT assumed — contested airspace. Enemy expected to employ mixed
+drone/EW screen ahead of main body.
+
+c. FRIENDLY FORCES
+
+NATO Multinational Brigade Latvia (MNB-LVA) holds Sector Latgale as part of
+the EFDL defensive concept. MNB-LVA is a Canadian-led formation of ~3,000
+personnel from 14 NATO allies under Operation REASSURANCE, based at Camp Adazi.
+The autonomous UEA element (Operation Baltic Shield) operates forward of MNB-LVA's
+manned defensive line. Coordinating authority: SACEUR through LANDCOM and MNC-NE.
+
+  Higher HQ: Supreme Allied Commander Europe (SACEUR) — strategic direction
+             NATO Multinational Corps Northeast (MNC-NE) — operational command
+             NATO Multinational Brigade Latvia (MNB-LVA) — tactical coordination
+             Canadian Task Force Latvia (TFL) — framework nation C2
+
+  Adjacent Units:
+    Left (South):  NATO Multinational Brigade Lithuania (German-led) — Suwalki sector
+    Right (North): NATO Multinational Brigade Estonia (UK-led) — Narva sector
+    Rear:          US V Corps forward element — Poznan, Poland (theater reserve)
+    Rear:          MNB-LVA main body — Camp Adazi and Sector Latgale defensive positions
+
+d. CIVIL CONSIDERATIONS
+
+The Latgale region is sparsely populated with scattered farmsteads and small
+villages. Civilian evacuation has been ordered for the 5km border zone. Remaining
+civilian population is estimated at fewer than 200 persons in the operational area.
+The Latvian State Border Guard has established checkpoints on all major routes.
+
+Latgale has a significant ethnic Russian minority population (~35%). Information
+operations and civil affairs coordination are critical to prevent Russian
+exploitation of ethnic tensions. All military operations must minimize damage to
+civilian property and infrastructure.
+
+---
+
+2. MISSION
+
+NATO MNB-LVA UEA element (Operation Baltic Shield) DEFENDS Sector Latgale along the
+Eastern Flank Deterrent Line, NLT D-Day H+2 hours, in order to attrit the Russian
+forward detachment to below 30% combat effectiveness before manned NATO defenders
+engage, thereby denying enemy forces the ability to establish a lodgement in the
+Latgale region, while maintaining verifiable human control over all lethal force
+decisions in accordance with NATO Standing Rules of Engagement.
+
+---
+
+3. EXECUTION
+
+COMMANDER'S INTENT:
+
+Purpose: Attrit Russian mechanized advance guard using autonomous platforms in the
+Unmanned Engagement Area to buy time for NATO manned forces to set the defense.
+Method: Deploy robot-enabled sensor mesh to detect and track enemy vehicles across
+open terrain. Establish autonomous platforms at firing positions along natural
+terrain features. Engage advancing armor upon confirmed BASTION DAO governance
+authorization from the MNB-LVA Commander.
+End State: Enemy forward detachment reduced to <30% combat power east of the main
+defensive line. Full sensor picture shared across the NATO coalition. Complete
+blockchain audit trail of all autonomous engagement decisions.
+
+CONCEPT OF OPERATIONS:
+
+This operation employs the Eastern Flank Deterrent Line defensive concept in three
+phases. The Unmanned Engagement Area is the primary killzone — all three phases
+occur forward of the manned defensive line.
+
+PHASE 1 — SENSOR SWEEP AND TRACK (H-Hour to H+30 minutes)
+  Coalition robot assets execute a coordinated sensor sweep of the UEA across
+  the open terrain sector. Formation: Line abreast (exploiting open terrain
+  observation advantage), with LV-BOT-01 as lead sensor platform.
+  UK-BOT-01 conducts independent ISR along the eastern tree line boundary.
+  Objective: Detect, classify, and track all enemy vehicles crossing into the
+  UEA. Populate coalition COP with confirmed hostile positions. Build
+  corroborated intelligence picture (minimum 2-robot confirmation per vehicle).
+  ROE Phase 1: Observation and reporting only. No engagement authorized.
+  NOTE: Open terrain enables simultaneous multi-axis observation — exploit
+  fields of view to maximize detection coverage.
+
+PHASE 2 — POSITION IN DEPTH (H+30 to H+60 minutes)
+  Based on Phase 1 intelligence, autonomous platforms occupy firing positions
+  along the natural terrain features of the UEA:
+  LV-BOT-01 advances to forward position at the tree line boundary (primary
+  engagement position with cover and concealment).
+  US-BOT-01 establishes overwatch on the northern ridge (elevated observation,
+  supporting fires position).
+  UK-BOT-01 maintains ISR orbit along the western boundary (rear observation,
+  early warning for flanking maneuver).
+  Objective: Establish interlocking engagement positions across the UEA depth.
+  ROE Phase 2: Defensive engagement authorized per NATO SROE.
+  CAVEAT: US asset (US-BOT-01) PROHIBITED from offensive advance operations
+  without explicit SACEUR authorization per US national policy. US-BOT-01 role
+  limited to overwatch and fire support from established positions.
+  UK asset (UK-BOT-01) PROHIBITED from any engagement — JEF observer status
+  only, intelligence contribution under Five Eyes sharing.
+
+PHASE 3 — ENGAGE IF AUTHORIZED (H+60 minutes, contingent on DAO approval)
+  If enemy forward detachment continues advance into the UEA after Phase 2
+  defensive positioning, the MNB-LVA Commander may request lethal
+  engagement authorization through the BASTION DAO governance system (NEAR
+  blockchain smart contract).
+  Authorization requires: commander identity verification (DID), threat
+  confirmation (2+ robot corroboration, >0.75 confidence), and explicit
+  target designation recorded to immutable ledger.
+
+  PATH A — AUTHORIZATION GRANTED:
+    LV-BOT-01 (full authority) designates target. Engagement recorded to NEAR
+    blockchain with: authorizing DID, timestamp, target coordinates (MGRS),
+    confidence level, corroborating robot IDs. Autonomous engagement continues
+    until enemy attrition threshold met or ammo expenditure limit reached.
+
+  PATH B — AUTHORIZATION DENIED:
+    Swarm receives halt command. Robots withdraw to Phase 2 positions.
+    Denial recorded to blockchain with commander DID and timestamp.
+    BASTION brain graph records denial as a provenance event.
+    Manned NATO forces assume engagement responsibility.
+
+---
+
+4. COORDINATING INSTRUCTIONS
+
+a. RULES OF ENGAGEMENT
+
+NATO Standing ROE per Reference C applies. Key restrictions:
+  (1) All lethal force requires explicit commander authorization via DAO gateway.
+      No autonomous engagement permitted under any circumstances without human
+      authorization recorded on the NEAR Protocol blockchain.
+  (2) US forces (US-BOT-01) prohibited from offensive advance operations without
+      explicit SACEUR approval per standing US national policy for NATO operations.
+      Restricted to support, overwatch, and fire support from established positions.
+  (3) UK forces (UK-BOT-01) are JEF observers only. No engagement authority.
+      UK ISR data contributes to the coalition intelligence picture under Five Eyes
+      sharing agreements but UK robots have no authority to designate targets or
+      participate in advance-to-contact operations.
+  (4) Minimum corroboration threshold: 2 robot detections, fused confidence > 0.75
+      before any target can be nominated for engagement consideration.
+  (5) All authorization decisions (approve or deny) are recorded immutably
+      on the NEAR Protocol blockchain with authorizing DID and timestamp.
+
+b. NATIONAL CAVEATS — SUMMARY TABLE
+
+  Nation   | Authority Level | swarm_advance | find_engage | recon_area | overwatch
+  ---------|-----------------|---------------|-------------|------------|----------
+  Latvia   | Full            | YES           | YES         | YES        | YES
+  US       | Restricted      | NO (w/o SACEUR)| NO         | YES        | YES
+  UK       | Observer        | NO            | NO          | YES        | NO
+
+c. INTELLIGENCE REQUIREMENTS
+
+Priority Intelligence Requirements (PIR):
+  PIR 1: Location and composition of enemy lead element (T-72B3M tanks)
+  PIR 2: Enemy rate of advance and axis of approach through open terrain
+  PIR 3: Presence of enemy drone/EW screen ahead of main body
+  PIR 4: Follow-on forces — battalion main body location and composition
+
+d. TERRAIN AND WEATHER
+
+Terrain: Open agricultural fields, flat to gently rolling (110-145m ASL).
+Scattered tree lines oriented N-S provide limited cover. Farm tracks provide
+all-weather mobility for wheeled/tracked autonomous platforms. Fields of
+observation extend 1500m+ in all directions — highly favorable for sensor
+platforms and precision engagement.
+
+Weather (forecast): Overcast, visibility 5-8km, wind W 10-15kts, temp 8C.
+Ground conditions: Firm (summer/early autumn), trafficable for all vehicles.
+
+e. COALITION INFORMATION SHARING
+
+All robot observations are tagged with national provenance DID per BASTION
+knowledge graph protocol. Coalition partners may filter intelligence by
+national contributor. Brain graph visualization enables post-mission review
+of what each national contingent contributed to the intelligence picture.
+
+Five Eyes intelligence (UK contribution) is marked accordingly and available
+to all coalition partners per existing sharing agreements.
+
+f. COMMAND AND SIGNAL
+
+  Command post: BASTION digital COP, Sector Latgale operational area
+  Communications: BASTION WebSocket mesh, UDP swarm coordination port 5807
+  Authentication: DID-based per NEAR Protocol blockchain identity
+  NATO reporting: SACEUR → LANDCOM → MNC-NE → MNB-LVA → BASTION
+
+---
+
+5. COMMAND AND CONTROL
+
+a. COMMAND
+
+  UEA Commander (under MNB-LVA): BASTION AI Planning System (NEAR Wallet DID)
+  Human oversight: Required for all lethal force authorization (DAO gate)
+  Audit trail: All decisions recorded to NEAR Protocol blockchain
+  Reporting chain: BASTION → MNB-LVA HQ → MNC-NE → SACEUR
+
+b. SIGNAL
+
+  Robot mesh: mDNS discovery + UDP broadcast (port 5807)
+  Bastion backend: WebSocket real-time telemetry
+  COP updates: Sub-100ms latency target for position tracking
+  NATO Link: Federated COP data shared to MNC-NE via BASTION API
+
+ACKNOWLEDGE RECEIPT OF THIS ORDER.
+
+NATO MULTINATIONAL BRIGADE LATVIA (MNB-LVA)
+OPERATION BALTIC SHIELD — UEA OPERATIONS CENTER
+CAMP ADAZI / SECTOR LATGALE, LATVIA
+2026-03-29 / DTGSIGNED: 290600Z MAR 2026
+
+DISTRIBUTION: LVA MECH INF BN, CAN TFL, US 2CR DET, UK JEF ISR, MNB-LVA HQ, COALITION AI STAFF
+CLASSIFICATION: NATO SECRET — REL TO LVA, US, UK

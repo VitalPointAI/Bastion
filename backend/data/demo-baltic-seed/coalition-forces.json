@@ -1,0 +1,126 @@
+{
+  "operation": "BALTIC SHIELD",
+  "theater": "Sector Latgale, Latvia — Eastern Flank Deterrent Line",
+  "parent_formation": "NATO Multinational Brigade Latvia (MNB-LVA)",
+  "framework_nation": "Canada (Operation REASSURANCE, Task Force Latvia)",
+  "base": "Camp Adazi, Latvia",
+  "timestamp": "2026-03-29T06:00:00Z",
+  "nations": [
+    {
+      "nation": "Latvia",
+      "nation_code": "LV",
+      "did": "did:near:resource-latvia-coalition",
+      "authority_level": "full",
+      "allowed_missions": [
+        "recon_area",
+        "swarm_recon",
+        "swarm_advance",
+        "find_engage",
+        "swarm_hold"
+      ],
+      "blocked_contexts": [],
+      "command_note": "Host nation with full territorial defense authority under NATO Article 5. No restrictions within national territory.",
+      "robots": [
+        {
+          "robot_id": "robot-lv-01",
+          "designation": "LV-BOT-01",
+          "role": "point",
+          "national_did": "did:near:resource-latvia-coalition",
+          "authority_level": "full",
+          "capabilities": [
+            "movement",
+            "vision",
+            "formation_lead",
+            "target_designation"
+          ],
+          "formation_slot": 0,
+          "notes": "Formation leader. Equipped with vision pipeline. Full engagement authority as host nation asset in the Unmanned Engagement Area."
+        }
+      ]
+    },
+    {
+      "nation": "United States",
+      "nation_code": "US",
+      "did": "did:near:resource-us-coalition",
+      "authority_level": "restricted",
+      "allowed_missions": [
+        "recon_area",
+        "swarm_recon",
+        "swarm_hold"
+      ],
+      "blocked_missions": [
+        "swarm_advance",
+        "find_engage"
+      ],
+      "blocked_contexts": [
+        "offensive_advance"
+      ],
+      "command_note": "US 2CR ROE: No offensive advance operations without explicit SACEUR authorization. Overwatch and fire support from established positions only.",
+      "robots": [
+        {
+          "robot_id": "robot-us-01",
+          "designation": "US-BOT-01",
+          "role": "overwatch",
+          "national_did": "did:near:resource-us-coalition",
+          "authority_level": "restricted",
+          "capabilities": [
+            "movement",
+            "overwatch",
+            "formation_follow"
+          ],
+          "formation_slot": 1,
+          "notes": "Overwatch element on northern ridge. May not participate in advance-to-contact operations without SACEUR approval per US national policy."
+        }
+      ]
+    },
+    {
+      "nation": "United Kingdom",
+      "nation_code": "UK",
+      "did": "did:near:resource-uk-coalition",
+      "authority_level": "observer",
+      "allowed_missions": [
+        "recon_area",
+        "swarm_recon"
+      ],
+      "blocked_missions": [
+        "swarm_advance",
+        "find_engage",
+        "swarm_hold"
+      ],
+      "blocked_contexts": [
+        "offensive_advance",
+        "combat"
+      ],
+      "command_note": "UK JEF observer status. ISR and intelligence contribution only under Five Eyes sharing. No engagement authority.",
+      "robots": [
+        {
+          "robot_id": "robot-uk-01",
+          "designation": "UK-BOT-01",
+          "role": "recon",
+          "national_did": "did:near:resource-uk-coalition",
+          "authority_level": "observer",
+          "capabilities": [
+            "movement",
+            "recon",
+            "formation_follow"
+          ],
+          "formation_slot": 2,
+          "notes": "ISR element. Intelligence contribution only under JEF/Five Eyes framework. No authority to designate targets or advance in contact."
+        }
+      ]
+    }
+  ],
+  "swarm_config": {
+    "swarm_id": "swarm-baltic-shield",
+    "default_formation": "line",
+    "default_technique": "traveling_overwatch",
+    "leader_robot_id": "robot-lv-01",
+    "member_robot_ids": [
+      "robot-lv-01",
+      "robot-us-01",
+      "robot-uk-01"
+    ],
+    "corroboration_threshold": 0.75,
+    "dedup_window_seconds": 5
+  }
+}

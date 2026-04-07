@@ -1,0 +1,74 @@
+[
+  {
+    "id": "DEMO-TEN-baltic-invasion",
+    "description": "Baltic States Invasion Risk — Russian Western Military District maintains capability for rapid fait accompli seizure of one or more Baltic states before NATO reinforcement arrives",
+    "intensity": 9,
+    "domain": "military",
+    "actors": ["DEMO-ACT-russia", "DEMO-ACT-ru-wmd", "DEMO-ACT-latvia", "DEMO-ACT-estonia", "DEMO-ACT-lithuania", "DEMO-ACT-nato"],
+    "triggers": ["Russian force buildup near Baltic borders", "Zapad exercise escalation", "Hybrid warfare provocation using ethnic Russian minorities", "Kaliningrad military reinforcement", "Political crisis in a Baltic state"],
+    "mitigators": ["NATO Enhanced Forward Presence (4 battlegroups)", "EFDL autonomous deterrent line", "Article 5 collective defense", "US V Corps theater reserve", "Finnish/Swedish NATO accession extending northern flank"]
+  },
+  {
+    "id": "DEMO-TEN-suwalki-gap",
+    "description": "Suwalki Gap Vulnerability — 65km corridor between Belarus and Kaliningrad is NATO's most vulnerable chokepoint, severing it would isolate the Baltic states",
+    "intensity": 8,
+    "domain": "military",
+    "actors": ["DEMO-ACT-russia", "DEMO-ACT-belarus", "DEMO-ACT-kaliningrad", "DEMO-ACT-poland", "DEMO-ACT-lithuania", "DEMO-ACT-nato"],
+    "triggers": ["Russian-Belarusian joint exercises near Suwalki", "Kaliningrad force buildup", "Hybrid provocation on Belarus-Poland border", "Disruption of Via Baltica logistics route"],
+    "mitigators": ["Polish force modernization", "US rotational forces in Poland", "German EFP Lithuania brigade", "NATO VJTF readiness", "Suwalki Gap defense exercises"]
+  },
+  {
+    "id": "DEMO-TEN-kaliningrad-a2ad",
+    "description": "Kaliningrad A2/AD Denial — Russian S-400, Iskander-M, and Bastion-P systems in Kaliningrad create an anti-access bubble over the Baltic Sea and eastern Poland",
+    "intensity": 7,
+    "domain": "military",
+    "actors": ["DEMO-ACT-kaliningrad", "DEMO-ACT-russia", "DEMO-ACT-nato", "DEMO-ACT-poland", "DEMO-ACT-sweden"],
+    "triggers": ["New air defense system deployments", "Iskander nuclear-capable missile exercises", "Baltic Fleet sortie increase", "NATO aircraft/ship tracking provocations"],
+    "mitigators": ["NATO IAMD integration", "Swedish Gotland air defense", "US Aegis Ashore in Poland", "SEAD/DEAD planning", "F-35 stealth overmatch"]
+  },
+  {
+    "id": "DEMO-TEN-russian-minorities",
+    "description": "Ethnic Russian Minority Exploitation — Russia uses information warfare to inflame ethnic Russian populations in Latvia (~25%) and Estonia (~25%) as pretext for intervention",
+    "intensity": 6,
+    "domain": "information",
+    "actors": ["DEMO-ACT-russia", "DEMO-ACT-latvia", "DEMO-ACT-estonia", "DEMO-ACT-eu"],
+    "triggers": ["Russian-language media disinformation campaigns", "Citizenship/language policy disputes", "Economic grievances in Russian-majority regions (Latgale, Ida-Viru)", "Staged provocations against Russian speakers"],
+    "mitigators": ["Baltic integration programs", "EU counter-disinformation efforts", "NATO StratCom Centre of Excellence (Riga)", "Independent Russian-language media support"]
+  },
+  {
+    "id": "DEMO-TEN-hybrid-warfare",
+    "description": "Russian Hybrid Warfare Campaign — below-threshold attacks including cyber, EW, sabotage, and weaponized migration designed to undermine NATO cohesion without triggering Article 5",
+    "intensity": 7,
+    "domain": "hybrid",
+    "actors": ["DEMO-ACT-russia", "DEMO-ACT-belarus", "DEMO-ACT-nato", "DEMO-ACT-eu", "DEMO-ACT-latvia", "DEMO-ACT-estonia", "DEMO-ACT-lithuania", "DEMO-ACT-poland"],
+    "triggers": ["Cyber attacks on critical infrastructure", "GPS jamming of Baltic airspace", "Weaponized migration via Belarus-Poland border", "Sabotage of undersea cables/pipelines", "Disinformation campaigns during elections"],
+    "mitigators": ["NATO CCDCOE (Tallinn)", "EU sanctions on Belarus", "NATO StratCom COE (Riga)", "Allied counter-hybrid measures", "Resilience and preparedness programs"]
+  },
+  {
+    "id": "DEMO-TEN-autonomous-weapons-governance",
+    "description": "Autonomous Weapons Governance Gap — deployment of autonomous platforms on the EFDL raises urgent questions about human control, accountability, and NATO ROE compliance",
+    "intensity": 5,
+    "domain": "governance",
+    "actors": ["DEMO-ACT-nato", "DEMO-ACT-usa", "DEMO-ACT-uk", "DEMO-ACT-latvia"],
+    "triggers": ["Autonomous engagement incidents", "ROE interpretation disputes between allies", "Speed-of-conflict pressure to reduce human oversight", "Adversary use of autonomous weapons without governance"],
+    "mitigators": ["BASTION DAO governance gate (blockchain-verified human authorization)", "Coalition caveat enforcement", "Immutable audit trail on NEAR Protocol", "Corroboration threshold requirements", "NATO AI principles"]
+  },
+  {
+    "id": "DEMO-TEN-ew-degradation",
+    "description": "Electronic Warfare Threat to Autonomous Operations — Russian EW systems (Zhitel, Krasukha, Murmansk-BN) can degrade GPS and communications critical for autonomous platform operations",
+    "intensity": 6,
+    "domain": "electromagnetic",
+    "actors": ["DEMO-ACT-russia", "DEMO-ACT-ru-wmd", "DEMO-ACT-nato", "DEMO-ACT-usa"],
+    "triggers": ["GPS jamming of autonomous platform navigation", "Communication disruption of robot mesh network", "Spoofing attacks on sensor data", "EW suppression during critical engagement phases"],
+    "mitigators": ["Mesh network resilience (mDNS + UDP fallback)", "INS dead reckoning backup", "EW-hardened communication protocols", "Visual navigation (YOLOv8) independent of GPS", "Counter-EW operations"]
+  },
+  {
+    "id": "DEMO-TEN-energy-coercion",
+    "description": "Russian Energy Coercion — weaponization of energy supply to undermine Baltic state resolve and NATO cohesion, particularly during winter months",
+    "intensity": 5,
+    "domain": "economic",
+    "actors": ["DEMO-ACT-russia", "DEMO-ACT-latvia", "DEMO-ACT-estonia", "DEMO-ACT-lithuania", "DEMO-ACT-eu"],
+    "triggers": ["Gas supply cutoffs", "Pipeline infrastructure sabotage (Nord Stream precedent)", "LNG terminal targeting", "Energy price manipulation during crisis"],
+    "mitigators": ["Baltic LNG terminals", "EU energy solidarity mechanism", "Renewable energy transition", "Strategic reserves", "Baltic energy interconnectors"]
+  }
+]
