@@ -340,11 +340,40 @@ ironclawRouter.post(
       // Fire-and-forget: response delivered via WebSocket
       ironclawService
         .handleMessage(problemSetId, userDid, content.trim(), context, threadId)
-        .catch((err) => {
+        .catch(async (err) => {
           console.error(
             `[ironclaw-router] handleMessage error (ps=${problemSetId}):`,
             err,
           );
+          // Surface the error to the user so they know something went wrong
+          const isTimeout = err instanceof Error && (err.name === 'TimeoutError' || err.message.includes('timed out'));
+          const errorContent = isTimeout
+            ? 'Response timed out — the request may still be processing. Try a simpler request or check back shortly.'
+            : `An error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`;
+          try {
+            const msg = await ironclawStore.addMessage({
+              problem_set_id: problemSetId,
+              content: errorContent,
+              sender: 'ironclaw',
+              specialist_id: null,
+              specialist_display_name: null,
+              delegated_by: null,
+              action_card: null,
+              step_progress: null,
+              suggestion: null,
+              ...(threadId ? { thread_id: threadId } : {}),
+            });
+            const { getMessageBus } = await import('../messaging/message-bus.js');
+            const bus = getMessageBus();
+            await bus.publish({
+              sourceDid: 'did:bastion:ironclaw',
+              sourceType: 'system',
+              destinationType: 'channel',
+              destinationTarget: `ironclaw.${problemSetId}`,
+              messageType: 'ironclaw.response',
+              payload: msg,
+            });
+          } catch { /* best-effort error notification */ }
         });
 
       res.status(202).json({ accepted: true });

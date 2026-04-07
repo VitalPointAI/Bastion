@@ -375,10 +375,9 @@ export class IronclawService {
     const messageForAi = preamble ? `${preamble}\n${content}` : content;
 
     // 4. Send to Ironclaw webhook (synchronous — waits for response)
-    const result = await ironclawClient.sendMessage(
-      session.id,
-      messageForAi,
-    );
+    //    10-minute timeout accommodates complex multi-tool analysis without guessing.
+    //    Ironclaw's internal job timeout is 3600s, so 600s is well within bounds.
+    const result = await ironclawClient.sendMessage(session.id, messageForAi, undefined, 600_000);
 
     // 5. Process the response — pass threadId so the response is stored in the same thread
     if (result.response) {
