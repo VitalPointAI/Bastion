@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 backend/.env
+
+# pyDrone local config (contains WiFi credentials)
+pydrone/config.py.local
 frontend/.env.local
 
 # Backend

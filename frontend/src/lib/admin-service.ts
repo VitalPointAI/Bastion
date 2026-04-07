@@ -1003,6 +1003,48 @@ class AdminService {
     }>(`/api/admin/skills/${encodeURIComponent(skillId)}/agents`);
     return response.assignments;
   }
+
+  // ============================================================================
+  // Bridge Token Management
+  // ============================================================================
+
+  async generateBridgeToken(props?: {
+    label?: string;
+    device_type?: string;
+    classification?: string;
+    authority_level?: string;
+    capabilities?: string[];
+    metadata?: Record<string, unknown>;
+    expires_in_minutes?: number;
+  }): Promise<{
+    token: string;
+    expires_at: string;
+    expires_in_minutes: number;
+    label?: string;
+    device_type: string;
+    classification: string;
+    authority_level: string;
+    capabilities: string[];
+  }> {
+    return this.fetch('/api/admin/bridge-tokens', {
+      method: 'POST',
+      body: JSON.stringify(props ?? {}),
+    });
+  }
+
+  async getBridgeStatus(): Promise<{
+    bridges: Array<{
+      bridge_id: string;
+      did: string;
+      capabilities: string[];
+      last_heartbeat: number;
+      connected_robots_count: number;
+      connected_robots: string[];
+    }>;
+    count: number;
+  }> {
+    return this.fetch('/api/bridge/status');
+  }
 }
 
 /**

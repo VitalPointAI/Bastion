@@ -24,15 +24,40 @@ export const bridgeRouter = Router();
 // Requires authentication (admin access).
 // ---------------------------------------------------------------------------
 
-bridgeRouter.post('/api/admin/bridge-tokens', requireAuth, async (_req: Request, res: Response): Promise<void> => {
+bridgeRouter.post('/api/admin/bridge-tokens', requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const token = await bridgeTokenStore.create(15);
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const {
+      label,
+      device_type: deviceType,
+      classification,
+      authority_level: authorityLevel,
+      capabilities,
+      metadata,
+      expires_in_minutes: expiresInMin,
+    } = req.body ?? {};
+
+    const ttl = typeof expiresInMin === 'number' && expiresInMin > 0 ? expiresInMin : 15;
+
+    const token = await bridgeTokenStore.create(ttl, {
+      label,
+      deviceType,
+      classification,
+      authorityLevel,
+      capabilities,
+      metadata,
+    });
+
+    const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
 
     res.json({
       token,
       expires_at: expiresAt.toISOString(),
-      expires_in_minutes: 15,
+      expires_in_minutes: ttl,
+      label,
+      device_type: deviceType ?? 'bridge',
+      classification: classification ?? 'UNCLASSIFIED',
+      authority_level: authorityLevel ?? 'observer',
+      capabilities: capabilities ?? [],
     });
   } catch (err) {
     console.error('[BridgeRouter] Failed to create bridge token:', err);

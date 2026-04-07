@@ -19,6 +19,7 @@ import { AuditLogPanel } from './AuditLogPanel';
 import { FundingPanel } from './FundingPanel';
 import { CostTrackingPanel } from './CostTrackingPanel';
 import { RegistrationControlPanel } from './RegistrationControlPanel';
+import { BridgeTokenPanel } from './BridgeTokenPanel';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -32,7 +33,8 @@ type AdminView =
   | 'audit'
   | 'funding'
   | 'costs'
-  | 'registration';
+  | 'registration'
+  | 'devices';
 
 const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'llm', label: 'LLM Provider', tooltip: 'Configure LLM provider settings' },
@@ -42,6 +44,7 @@ const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'funding', label: 'Funding', tooltip: 'NEAR account funding management' },
   { id: 'costs', label: 'Costs', tooltip: 'Expenditure tracking — LLM and NEAR costs' },
   { id: 'registration', label: 'Registration', tooltip: 'Domain whitelist & email blacklist' },
+  { id: 'devices', label: 'Devices', tooltip: 'Register bridges, drones, and equipment' },
 ];
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
@@ -180,6 +183,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {selectedView === 'funding' && <FundingPanel />}
           {selectedView === 'costs' && <CostTrackingPanel />}
           {selectedView === 'registration' && <RegistrationControlPanel />}
+          {selectedView === 'devices' && <BridgeTokenPanel />}
         </TabLayout>
       </div>
     </div>

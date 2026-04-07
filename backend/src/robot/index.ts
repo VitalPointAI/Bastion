@@ -15,6 +15,7 @@ export { bridgeRouter } from './bridge-router.js';
 
 // Bridge token store (Phase 43)
 export { bridgeTokenStore } from './bridge-token-store.js';
+export type { TokenDeviceProperties } from './bridge-token-store.js';
 
 // Mission service
 export { getRobotMissionService, RobotMissionService } from './robot-mission-service.js';
