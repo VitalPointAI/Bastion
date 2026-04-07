@@ -30,19 +30,33 @@ async function ensureBridgeTokensTable(): Promise<void> {
       created_at TIMESTAMPTZ DEFAULT NOW(),
       expires_at TIMESTAMPTZ NOT NULL,
       used_at TIMESTAMPTZ NULL,
-      used_by TEXT NULL,
-      label TEXT NULL,
-      device_type TEXT NULL DEFAULT 'bridge',
-      classification TEXT NULL DEFAULT 'UNCLASSIFIED',
-      authority_level TEXT NULL DEFAULT 'observer',
-      capabilities TEXT[] NULL DEFAULT '{}',
-      metadata JSONB NULL DEFAULT '{}'
+      used_by TEXT NULL
     );
 
     CREATE INDEX IF NOT EXISTS idx_bridge_tokens_token
       ON bridge_tokens(token);
     CREATE INDEX IF NOT EXISTS idx_bridge_tokens_expires
       ON bridge_tokens(expires_at);
+
+    -- Add device property columns (safe to re-run — IF NOT EXISTS equivalent via DO block)
+    DO $$ BEGIN
+      ALTER TABLE bridge_tokens ADD COLUMN label TEXT NULL;
+    EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE bridge_tokens ADD COLUMN device_type TEXT NULL DEFAULT 'bridge';
+    EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE bridge_tokens ADD COLUMN classification TEXT NULL DEFAULT 'UNCLASSIFIED';
+    EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE bridge_tokens ADD COLUMN authority_level TEXT NULL DEFAULT 'observer';
+    EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE bridge_tokens ADD COLUMN capabilities TEXT[] NULL DEFAULT '{}';
+    EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE bridge_tokens ADD COLUMN metadata JSONB NULL DEFAULT '{}';
+    EXCEPTION WHEN duplicate_column THEN NULL; END $$;
   `);
 
   tablesInitialized = true;
