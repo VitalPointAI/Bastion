@@ -289,6 +289,79 @@ function handleRobotRelay(
     return;
   }
 
+  // Handle first-time token-based registration for bridge-relayed robots
+  // (mirrors the logic in robot-ws.ts handleTokenRegistration)
+  if (
+    robot_message?.type === RobotWsMessageType.register &&
+    robot_message.token &&
+    !robot_message.did
+  ) {
+    handleRelayedTokenRegistration(ws, robot_message, service, bridge_id).catch((err) =>
+      console.error('[BridgeWS] Relayed token registration error:', err),
+    );
+    return;
+  }
+
   // Forward to mission service as if sent directly from the robot
   service.handleRobotMessage(ws, robot_message);
+}
+
+/**
+ * Handle first-time robot registration via token when the robot connects
+ * through a bridge relay (not directly to /ws/robot).
+ */
+async function handleRelayedTokenRegistration(
+  ws: BridgeWS,
+  robotMsg: Record<string, unknown>,
+  service: ReturnType<typeof getRobotMissionService>,
+  bridgeId: string,
+): Promise<void> {
+  const robotId = robotMsg.robot_id as string;
+  const token = robotMsg.token as string;
+  const capabilities = (robotMsg.capabilities as string[]) ?? [];
+
+  const result = await bridgeTokenStore.consume(token);
+  if (!result.valid) {
+    console.warn(`[BridgeWS] Rejected robot ${robotId} via bridge ${bridgeId} — invalid token`);
+    return;
+  }
+
+  // Register robot as a resource to get its DID
+  const registry = getResourceRegistry();
+  await registry.ensureInitialized();
+
+  const resource = await registry.registerResource({
+    name: (robotMsg.name as string) || `Robot ${robotId}`,
+    category: 'vehicles',
+    specifications: {
+      type: result.props?.deviceType ?? 'drone',
+      classification: result.props?.classification ?? 'UNCLASSIFIED',
+      authorityLevel: result.props?.authorityLevel ?? 'observer',
+      ...(robotMsg.hardware_info as Record<string, unknown> ?? {}),
+    },
+    isAutonomous: true,
+    capabilities: capabilities.length > 0 ? capabilities : (result.props?.capabilities ?? ['telemetry']),
+  });
+
+  console.log(`[BridgeWS] Robot ${robotId} registered via bridge ${bridgeId} (DID: ${resource.did})`);
+
+  // Now forward to mission service with the assigned DID
+  service.handleRobotMessage(ws, {
+    type: RobotWsMessageType.register,
+    robot_id: robotId,
+    did: resource.did,
+    name: robotMsg.name as string | undefined,
+    capabilities,
+    hardware_info: robotMsg.hardware_info as Record<string, unknown> | undefined,
+  });
+
+  // Send robot:registered back through the bridge so the drone can persist its DID
+  const registeredMsg = {
+    type: RobotWsMessageType.registered,
+    did: resource.did,
+    robot_id: robotId,
+  };
+  try {
+    if (ws.readyState === 1) ws.send(JSON.stringify(registeredMsg));
+  } catch { /* ignore */ }
 }

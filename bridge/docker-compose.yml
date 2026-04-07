@@ -20,9 +20,13 @@ services:
       context: ..
       dockerfile: bridge/Dockerfile
     # Host networking — required for mDNS multicast (see note above).
-    # Port mappings are ignored when network_mode is host; the container
-    # shares the host's network stack directly.
-    network_mode: host
+    # On Docker Desktop (Windows/macOS), host networking doesn't expose
+    # ports to the real host network. Use port mappings instead and
+    # disable mDNS if running on Docker Desktop.
+    # network_mode: host
+    ports:
+      - "8765:8765"   # Robot relay WebSocket
+      - "8766:8766"   # Bridge UI dashboard
     restart: always
     env_file:
       - .env

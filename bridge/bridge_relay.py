@@ -104,6 +104,7 @@ class RobotRelay:
                                 await robot_ws.send(json.dumps(cmd))
 
                 # Forward all messages to cloud
+                logger.info("relay: forwarding %s from %s (cloud_ws=%s)", msg_type, robot_id, self._cloud_ws is not None)
                 if self._cloud_ws is not None:
                     try:
                         from bridge.bridge_ws import _relay_robot_message
@@ -111,6 +112,8 @@ class RobotRelay:
                         await _relay_robot_message(self._cloud_ws, msg, bridge_id=bridge_id)
                     except Exception as exc:  # noqa: BLE001
                         logger.warning("relay: failed to forward to cloud: %s", exc)
+                else:
+                    logger.warning("relay: no cloud_ws — message dropped")
 
         except Exception as exc:  # noqa: BLE001
             logger.info("relay: robot connection closed: %s", exc)
@@ -144,7 +147,7 @@ async def robot_relay_server(
     """
     handler = lambda ws: relay._handle_robot_connection(ws, queue)
 
-    async with websockets.serve(handler, "0.0.0.0", cfg.RELAY_PORT) as server:
+    async with websockets.serve(handler, "0.0.0.0", cfg.RELAY_PORT, ping_interval=30, ping_timeout=60) as server:
         logger.info("relay: listening on port %d", cfg.RELAY_PORT)
         await shutdown.wait()
         logger.info("relay: shutdown signal received, stopping")
