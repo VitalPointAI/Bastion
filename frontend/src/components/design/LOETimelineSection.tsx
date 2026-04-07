@@ -78,7 +78,7 @@ export function LOETimelineSection({
   const { toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
-  const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs);
+  const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs ?? []);
   const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [phaseEditValue, setPhaseEditValue] = useState('');
@@ -87,11 +87,11 @@ export function LOETimelineSection({
 
   // Sync if initialLOEs changes externally
   useEffect(() => {
-    setLoes(initialLOEs);
+    setLoes(initialLOEs ?? []);
   }, [initialLOEs]);
 
   // Extract adversary critical vulnerabilities for linking
-  const cogVulnerabilities = collectVulnerabilities(cogAnalysis.adversary.root);
+  const cogVulnerabilities = collectVulnerabilities(cogAnalysis?.adversary?.root ?? null);
 
   // ─── Auto-save with debounce ─────────────────────────────────────────────
 

@@ -116,11 +116,11 @@ export interface ProblemFramingSectionProps {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function generateProblemStatement(data: ProblemFramingData): string {
-  if (!data.currentState && !data.desiredEndState) return '';
+  if (!data?.currentState && !data?.desiredEndState) return '';
   const current = data.currentState?.trim();
   const desired = data.desiredEndState?.trim();
-  const obstacles = data.obstacles.filter(Boolean);
-  const constraints = data.constraints.filter(Boolean);
+  const obstacles = (data.obstacles ?? []).filter(Boolean);
+  const constraints = (data.constraints ?? []).filter(Boolean);
 
   const parts: string[] = [];
   if (current) parts.push(`Currently, ${current}.`);
@@ -209,8 +209,14 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [formData, setFormData] = useState<ProblemFramingData>(() => ({
-    ...initialData,
-    problemStatement: initialData.problemStatement || generateProblemStatement(initialData),
+    currentState: initialData?.currentState ?? '',
+    desiredEndState: initialData?.desiredEndState ?? '',
+    problemStatement: initialData?.problemStatement || generateProblemStatement(initialData),
+    keyTensions: initialData?.keyTensions ?? [],
+    obstacles: initialData?.obstacles ?? [],
+    opportunities: initialData?.opportunities ?? [],
+    assumptions: initialData?.assumptions ?? [],
+    constraints: initialData?.constraints ?? [],
   }));
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isSynthesizing, setIsSynthesizing] = useState(false);

@@ -25,12 +25,18 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
   const { toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
-  const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(initialData);
+  const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(() => ({
+    friendly: initialData?.friendly ?? { root: null },
+    adversary: initialData?.adversary ?? { root: null },
+  }));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync if initialData changes externally
   useEffect(() => {
-    setCogAnalysis(initialData);
+    setCogAnalysis({
+      friendly: initialData?.friendly ?? { root: null },
+      adversary: initialData?.adversary ?? { root: null },
+    });
   }, [initialData]);
 
   const scheduleAutoSave = useCallback(
