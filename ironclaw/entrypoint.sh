@@ -91,30 +91,87 @@ start_mcp_proxy
 # These settings persist in the database across restarts.
 # ---------------------------------------------------------------------------
 configure_ironclaw() {
-  # Disable sandbox (no Docker-in-Docker available)
-  $IRONCLAW_BIN config set sandbox.enabled false 2>/dev/null
+  CONFIG_FILE="/home/ironclaw/.ironclaw/config.toml"
 
-  # Enable heartbeat for autonomous monitoring
-  $IRONCLAW_BIN config set heartbeat.enabled true 2>/dev/null
-  $IRONCLAW_BIN config set heartbeat.interval_secs 1800 2>/dev/null
+  # ---------------------------------------------------------------------------
+  # Write config.toml directly — this is the authoritative config file.
+  # `ironclaw config set` writes to the DB which is LOWER priority than
+  # config.toml, so those values get silently overridden. Writing the file
+  # ensures status, runtime, and heartbeat all see the same values.
+  # ---------------------------------------------------------------------------
+  cat > "$CONFIG_FILE" <<TOML
+# IronClaw configuration — managed by entrypoint.sh
+# Priority: env var > this file > database settings > defaults.
 
-  # Secrets keychain — enable if master key is provided
-  if [ -n "${IRONCLAW_SECRETS_MASTER_KEY:-}" ]; then
-    $IRONCLAW_BIN config set secrets_master_key_source env 2>/dev/null
-    echo "[entrypoint] Secrets keychain enabled (master key from env)"
-  else
-    echo "[entrypoint] WARNING: No IRONCLAW_SECRETS_MASTER_KEY — secrets keychain disabled"
-  fi
+onboard_completed = true
+secrets_master_key_source = "env"
 
-  # Embeddings — NEAR AI provider (no API key needed)
-  $IRONCLAW_BIN config set embeddings.enabled true 2>/dev/null
-  $IRONCLAW_BIN config set embeddings.provider nearai 2>/dev/null
-  $IRONCLAW_BIN config set embeddings.model text-embedding-3-small 2>/dev/null
-  echo "[entrypoint] Embeddings enabled (NEAR AI text-embedding-3-small)"
+[embeddings]
+enabled = true
+provider = "nearai"
+model = "text-embedding-3-small"
+
+[tunnel]
+ts_funnel = false
+
+[channels]
+http_enabled = true
+http_port = 8080
+http_host = "0.0.0.0"
+signal_enabled = false
+wasm_channels = []
+wasm_channels_enabled = false
+
+[channels.wasm_channel_owner_ids]
+
+[heartbeat]
+enabled = true
+interval_secs = 1800
+
+[agent]
+name = "ironclaw"
+max_parallel_jobs = 5
+job_timeout_secs = 3600
+stuck_threshold_secs = 300
+use_planning = true
+repair_check_interval_secs = 60
+max_repair_attempts = 3
+session_idle_timeout_secs = 604800
+max_tool_iterations = 50
+auto_approve_tools = false
+
+[wasm]
+enabled = true
+default_memory_limit = 10485760
+default_timeout_secs = 60
+default_fuel_limit = 10000000
+cache_compiled = true
+
+[sandbox]
+enabled = false
+policy = "readonly"
+timeout_secs = 120
+memory_limit_mb = 2048
+cpu_shares = 1024
+image = "ironclaw-worker:latest"
+auto_pull_image = true
+extra_allowed_domains = []
+
+[safety]
+max_output_length = 100000
+injection_check_enabled = true
+
+[builder]
+enabled = true
+max_iterations = 20
+timeout_secs = 600
+auto_register = true
+TOML
+
+  echo "[entrypoint] Config written: heartbeat=true, embeddings=nearai, sandbox=false, secrets=env"
 
   # WASM tools directory — create if missing
   mkdir -p /home/ironclaw/.ironclaw/tools 2>/dev/null
-  echo "[entrypoint] WASM tools directory ready"
 
   # Register BASTION MCP server via localhost proxy
   # Remove first in case URL changed, ignore errors if not present
