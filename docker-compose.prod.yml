@@ -100,6 +100,8 @@ services:
       HTTP_WEBHOOK_SECRET: ${IRONCLAW_SHARED_SECRET}
       # Secrets keychain master key (stable across restarts)
       IRONCLAW_SECRETS_MASTER_KEY: ${IRONCLAW_MASTER_KEY}
+      # NEAR AI API key for embeddings
+      NEARAI_API_KEY: ${NEARAI_API_KEY}
       # Agent settings
       AGENT_NAME: ironclaw
       AGENT_USE_PLANNING: "true"
