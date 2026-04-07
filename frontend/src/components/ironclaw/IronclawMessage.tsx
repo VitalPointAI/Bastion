@@ -112,7 +112,7 @@ export function IronclawMessage({ message, onActionDecision }: IronclawMessagePr
               td: ({ children }) => <td className="border border-slate-700 px-2 py-1">{children}</td>,
             }}
           >
-            {message.content}
+            {message.content ?? ''}
           </Markdown>
         </div>
 

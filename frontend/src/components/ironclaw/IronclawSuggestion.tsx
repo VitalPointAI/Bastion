@@ -75,7 +75,7 @@ export function IronclawSuggestion({ suggestion, onAccept, onDismiss, onRevise }
               ol: ({ children }) => <ol className="list-decimal pl-4 mb-1 space-y-0.5">{children}</ol>,
             }}
           >
-            {suggestion.content}
+            {suggestion.content ?? ''}
           </Markdown>
         </div>
       )}
