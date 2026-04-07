@@ -342,6 +342,26 @@ export class IronclawService {
     // Log inbound user message to activity audit trail
     getActivityLogger().logIronclawMessage('inbound', 'ironclaw', content, problemSetId);
 
+    // Immediate acknowledgment — let user know Ironclaw received the request
+    // before context assembly and agent processing (which can take minutes)
+    const isComplexRequest = content.length > 80 ||
+      /\b(analys[ie]s|draft|develop|create|build|assess|evaluat|synthesize|compare)\b/i.test(content);
+    if (isComplexRequest) {
+      const ackMsg = await ironclawStore.addMessage({
+        problem_set_id: problemSetId,
+        content: 'Working on it — assembling context and coordinating with staff. This may take a few minutes for complex analysis.',
+        sender: 'ironclaw',
+        specialist_id: null,
+        specialist_display_name: null,
+        delegated_by: null,
+        action_card: null,
+        step_progress: null,
+        suggestion: null,
+        ...(threadId ? { thread_id: threadId } : {}),
+      });
+      await publishToChannel(problemSetId, 'ironclaw.response', ackMsg);
+    }
+
     // Proactive design tab suggestion (fire-and-forget — non-blocking)
     if (context) {
       this.checkDesignTabSuggestion(problemSetId, context).catch((err) =>
