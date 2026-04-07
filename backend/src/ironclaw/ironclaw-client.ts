@@ -238,34 +238,26 @@ export class IronclawClient {
       return result.response;
     }
 
-    // 1. Record the message count before sending so we know when a new assistant message appears
-    const beforeResult = await this.pool.query(
-      `SELECT c.id AS conversation_id, COUNT(cm.id)::int AS msg_count
-       FROM conversations c
-       LEFT JOIN conversation_messages cm ON cm.conversation_id = c.id
-       WHERE c.thread_id = $1
-       GROUP BY c.id
-       LIMIT 1`,
-      [threadId],
-    );
+    // 1. Snapshot: record the timestamp just before sending so we can find
+    //    the assistant response that comes AFTER our message. This is safe
+    //    against concurrent messages — we look for the specific job created
+    //    by our sendMessageAsync call, not just "any new message".
+    const sentAt = new Date();
 
+    // 2. Send async (fire-and-forget — Ironclaw returns immediately with message_id)
+    const { message_id: ourMessageId } = await this.sendMessageAsync(threadId, content);
+
+    // 3. Find the conversation (may be created by this first message)
     let conversationId: string | null = null;
-    let baselineCount = 0;
-    if (beforeResult.rows.length > 0) {
-      conversationId = beforeResult.rows[0].conversation_id;
-      baselineCount = beforeResult.rows[0].msg_count;
-    }
 
-    // 2. Send async (fire-and-forget — Ironclaw returns immediately)
-    await this.sendMessageAsync(threadId, content);
-
-    // 3. Poll conversation_messages for an assistant response
-    //    Also check agent_jobs for failure. No timeout — we wait for a terminal state.
+    // 4. Poll for: (a) an assistant message responding to our message, or
+    //    (b) the job reaching a terminal state (completed/failed).
+    //    We identify "our" job as the one created after sentAt on this conversation.
     for (;;) {
       await new Promise((r) => setTimeout(r, pollIntervalMs));
 
       try {
-        // If we didn't have a conversation before, find it now (Ironclaw creates it on first message)
+        // Resolve conversation if not yet found
         if (!conversationId) {
           const convResult = await this.pool.query(
             `SELECT id FROM conversations WHERE thread_id = $1 LIMIT 1`,
@@ -278,50 +270,54 @@ export class IronclawClient {
           }
         }
 
-        // Check for new assistant message
+        // Find the job Ironclaw created for our message.
+        // It's the most recent job on this conversation created after we sent.
+        const jobResult = await this.pool.query(
+          `SELECT id, status, failure_reason FROM agent_jobs
+           WHERE conversation_id = $1 AND created_at >= $2
+           ORDER BY created_at DESC LIMIT 1`,
+          [conversationId, sentAt],
+        );
+
+        if (jobResult.rows.length === 0) {
+          continue; // Job not created yet — Ironclaw is still processing the webhook
+        }
+
+        const job = jobResult.rows[0];
+
+        if (job.status === 'failed') {
+          console.error(`[ironclaw-client] Job ${job.id} failed: ${job.failure_reason}`);
+          return null;
+        }
+
+        // Job is in a terminal state (completed/done) or still running —
+        // check for an assistant message created after our send timestamp.
+        // The assistant message is the authoritative response regardless of job status.
         const msgResult = await this.pool.query(
           `SELECT content FROM conversation_messages
-           WHERE conversation_id = $1 AND role = 'assistant'
+           WHERE conversation_id = $1 AND role = 'assistant' AND created_at > $2
            ORDER BY created_at DESC LIMIT 1`,
-          [conversationId],
+          [conversationId, sentAt],
         );
 
         if (msgResult.rows.length > 0) {
-          // Verify this is a new message (count increased)
-          const countResult = await this.pool.query(
-            `SELECT COUNT(*)::int AS cnt FROM conversation_messages WHERE conversation_id = $1`,
-            [conversationId],
-          );
-          const currentCount = countResult.rows[0]?.cnt ?? 0;
-          if (currentCount > baselineCount) {
-            return msgResult.rows[0].content;
-          }
+          return msgResult.rows[0].content;
         }
 
-        // Check if the job failed
-        const jobResult = await this.pool.query(
-          `SELECT status, failure_reason FROM agent_jobs
-           WHERE conversation_id = $1
-           ORDER BY created_at DESC LIMIT 1`,
-          [conversationId],
-        );
-        if (jobResult.rows.length > 0) {
-          const { status, failure_reason } = jobResult.rows[0];
-          if (status === 'failed') {
-            console.error(`[ironclaw-client] Job failed: ${failure_reason}`);
-            return null;
-          }
-          if (status === 'completed' || status === 'done') {
-            // Job completed but no new assistant message — check one more time
-            const finalMsg = await this.pool.query(
-              `SELECT content FROM conversation_messages
-               WHERE conversation_id = $1 AND role = 'assistant'
-               ORDER BY created_at DESC LIMIT 1`,
-              [conversationId],
-            );
-            return finalMsg.rows[0]?.content ?? null;
-          }
+        // If job completed but no assistant message yet, wait one more cycle
+        // (message write may lag slightly behind job status update)
+        if (job.status === 'completed' || job.status === 'done') {
+          await new Promise((r) => setTimeout(r, pollIntervalMs));
+          const finalMsg = await this.pool.query(
+            `SELECT content FROM conversation_messages
+             WHERE conversation_id = $1 AND role = 'assistant' AND created_at > $2
+             ORDER BY created_at DESC LIMIT 1`,
+            [conversationId, sentAt],
+          );
+          return finalMsg.rows[0]?.content ?? null;
         }
+
+        // Job still running — keep polling
       } catch (err) {
         // Transient DB error — keep polling
         console.warn('[ironclaw-client] Poll error (will retry):', err);
