@@ -150,6 +150,12 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD}
       MCP_PORT: "3334"
       MCP_SHARED_SECRET: ${MCP_SHARED_SECRET}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3334/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
     depends_on:
       postgres:
         condition: service_healthy
