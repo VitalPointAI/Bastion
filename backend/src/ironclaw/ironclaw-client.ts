@@ -223,6 +223,113 @@ export class IronclawClient {
   }
 
   /**
+   * Send a message async and poll Ironclaw's DB for the response.
+   * No arbitrary timeout — polls until Ironclaw's job completes (success or failure).
+   * Uses the Ironclaw PostgreSQL pool to read conversation_messages directly.
+   */
+  async sendMessageAndWait(
+    threadId: string,
+    content: string,
+    pollIntervalMs = 3000,
+  ): Promise<string | null> {
+    if (!this.pool) {
+      // No DB access — fall back to synchronous with generous timeout
+      const result = await this.sendMessage(threadId, content, undefined, 600_000);
+      return result.response;
+    }
+
+    // 1. Record the message count before sending so we know when a new assistant message appears
+    const beforeResult = await this.pool.query(
+      `SELECT c.id AS conversation_id, COUNT(cm.id)::int AS msg_count
+       FROM conversations c
+       LEFT JOIN conversation_messages cm ON cm.conversation_id = c.id
+       WHERE c.thread_id = $1
+       GROUP BY c.id
+       LIMIT 1`,
+      [threadId],
+    );
+
+    let conversationId: string | null = null;
+    let baselineCount = 0;
+    if (beforeResult.rows.length > 0) {
+      conversationId = beforeResult.rows[0].conversation_id;
+      baselineCount = beforeResult.rows[0].msg_count;
+    }
+
+    // 2. Send async (fire-and-forget — Ironclaw returns immediately)
+    await this.sendMessageAsync(threadId, content);
+
+    // 3. Poll conversation_messages for an assistant response
+    //    Also check agent_jobs for failure. No timeout — we wait for a terminal state.
+    for (;;) {
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+
+      try {
+        // If we didn't have a conversation before, find it now (Ironclaw creates it on first message)
+        if (!conversationId) {
+          const convResult = await this.pool.query(
+            `SELECT id FROM conversations WHERE thread_id = $1 LIMIT 1`,
+            [threadId],
+          );
+          if (convResult.rows.length > 0) {
+            conversationId = convResult.rows[0].id;
+          } else {
+            continue; // Conversation not created yet
+          }
+        }
+
+        // Check for new assistant message
+        const msgResult = await this.pool.query(
+          `SELECT content FROM conversation_messages
+           WHERE conversation_id = $1 AND role = 'assistant'
+           ORDER BY created_at DESC LIMIT 1`,
+          [conversationId],
+        );
+
+        if (msgResult.rows.length > 0) {
+          // Verify this is a new message (count increased)
+          const countResult = await this.pool.query(
+            `SELECT COUNT(*)::int AS cnt FROM conversation_messages WHERE conversation_id = $1`,
+            [conversationId],
+          );
+          const currentCount = countResult.rows[0]?.cnt ?? 0;
+          if (currentCount > baselineCount) {
+            return msgResult.rows[0].content;
+          }
+        }
+
+        // Check if the job failed
+        const jobResult = await this.pool.query(
+          `SELECT status, failure_reason FROM agent_jobs
+           WHERE conversation_id = $1
+           ORDER BY created_at DESC LIMIT 1`,
+          [conversationId],
+        );
+        if (jobResult.rows.length > 0) {
+          const { status, failure_reason } = jobResult.rows[0];
+          if (status === 'failed') {
+            console.error(`[ironclaw-client] Job failed: ${failure_reason}`);
+            return null;
+          }
+          if (status === 'completed' || status === 'done') {
+            // Job completed but no new assistant message — check one more time
+            const finalMsg = await this.pool.query(
+              `SELECT content FROM conversation_messages
+               WHERE conversation_id = $1 AND role = 'assistant'
+               ORDER BY created_at DESC LIMIT 1`,
+              [conversationId],
+            );
+            return finalMsg.rows[0]?.content ?? null;
+          }
+        }
+      } catch (err) {
+        // Transient DB error — keep polling
+        console.warn('[ironclaw-client] Poll error (will retry):', err);
+      }
+    }
+  }
+
+  /**
    * Health check against the Ironclaw sidecar.
    * Returns true if healthy, false otherwise.
    */
