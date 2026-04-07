@@ -401,10 +401,28 @@ export class TaskOrchestrator {
       await publishToChannel(task.problemSetId, 'ironclaw.response', chatMsg);
     }
 
+    // Calculate elapsed time from task creation
+    const elapsedMs = Date.now() - task.createdAt.getTime();
+    const elapsedMin = Math.floor(elapsedMs / 60000);
+    const elapsedSec = Math.floor((elapsedMs % 60000) / 1000);
+    const elapsed = elapsedMin > 0
+      ? `${elapsedMin}m ${elapsedSec}s`
+      : `${elapsedSec}s`;
+
+    const completedSteps = task.steps.filter((s) => s.status === 'complete').length;
+    const failedSteps = task.steps.filter((s) => s.status === 'failed').length;
+
+    let summaryContent = `**${task.title}** — complete (${elapsed}).\n\n`;
+    summaryContent += `${task.suggestions.length} suggestion(s) ready for your review.`;
+    if (failedSteps > 0) {
+      summaryContent += ` ${failedSteps} of ${completedSteps + failedSteps} analysis areas could not be completed.`;
+    }
+    summaryContent += `\n\nReview each suggestion below and **Accept** to apply or **Dismiss** to discard.`;
+
     // Summary message
     const summaryMsg = await ironclawStore.addMessage({
       problem_set_id: task.problemSetId,
-      content: `Task "${task.title}" complete. ${task.suggestions.length} suggestion(s) ready for review.`,
+      content: summaryContent,
       sender: 'ironclaw',
       specialist_id: null,
       specialist_display_name: null,

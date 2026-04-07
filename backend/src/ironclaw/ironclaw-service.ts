@@ -631,7 +631,14 @@ export class IronclawService {
         agentHints: (tr.agent_hints as string[]) ?? [],
       });
 
-      // Emit initial progress message
+      // Estimate time based on number of analysis steps (~2-4 min per step, parallel)
+      const analysisStepCount = task.steps.filter((s) => s.label !== 'Synthesize Results').length;
+      const estMinutes = Math.max(2, Math.ceil(analysisStepCount * 0.7)); // ~40s-1min per parallel step + overhead
+      const agentNames = (tr.agent_hints as string[])?.length
+        ? (tr.agent_hints as string[]).join(', ')
+        : 'staff agents';
+
+      // Emit initial progress message with time estimate
       const stepProgress: StepProgressData = {
         action_id: task.taskId,
         steps: task.steps.map((s) => ({
@@ -644,9 +651,9 @@ export class IronclawService {
         started_at: new Date().toISOString(),
       };
 
-      await ironclawStore.addMessage({
+      const dispatchMsg = await ironclawStore.addMessage({
         problem_set_id: problemSetId,
-        content: `Task created: ${task.title}. Dispatching agents...`,
+        content: `**${task.title}** — tasking ${agentNames} (${analysisStepCount} analysis areas).\n\nEstimated time: **~${estMinutes} minutes**. You'll be notified when results are ready for review. You can continue working in the meantime.`,
         sender: 'ironclaw',
         specialist_id: null,
         specialist_display_name: null,
@@ -654,7 +661,9 @@ export class IronclawService {
         action_card: null,
         step_progress: stepProgress,
         suggestion: null,
+        ...(threadId ? { thread_id: threadId } : {}),
       });
+      await publishToChannel(problemSetId, 'ironclaw.response', dispatchMsg);
 
       // Dispatch agents in background (non-blocking)
       orchestrator.dispatchTask(task.taskId).catch((err) =>

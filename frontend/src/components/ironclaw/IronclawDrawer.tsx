@@ -16,6 +16,7 @@ import { IronclawSuggestion } from './IronclawSuggestion.tsx';
 import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 import { IronclawMemoryPanel } from './IronclawMemoryPanel.tsx';
 import { IronclawActivityFeed } from './IronclawActivityFeed.tsx';
+import { IronclawTasksPanel } from './IronclawTasksPanel.tsx';
 import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.ts';
 import { AgentConfigPanel } from '../agent-config/AgentConfigPanel.tsx';
 import { IronclawConceptsPanel } from './IronclawConceptsPanel.tsx';
@@ -115,7 +116,7 @@ export function IronclawDrawer({
   const prevMessageCountRef = useRef(0);
   const userScrolledUpRef = useRef(false);
   /** Controls which content area is shown: 'chat', 'activity', 'memory', 'knowledge', or 'config' */
-  const [drawerTab, setDrawerTab] = useState<'chat' | 'activity' | 'memory' | 'knowledge' | 'config'>('chat');
+  const [drawerTab, setDrawerTab] = useState<'chat' | 'tasks' | 'activity' | 'memory' | 'knowledge' | 'config'>('chat');
 
   // Fetch version from /api/ironclaw/status on mount + after updates
   const fetchVersion = useCallback(() => {
@@ -363,6 +364,23 @@ export function IronclawDrawer({
           </button>
           {!isGlobalMode && problemSetId && (
             <button
+              onClick={() => setDrawerTab('tasks')}
+              title="Agent Tasks"
+              aria-label="Agent Tasks"
+              className={`relative p-2 rounded-md transition-colors ${
+                drawerTab === 'tasks'
+                  ? 'bg-cyan-500/15 text-cyan-400'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/40'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </button>
+          )}
+          {!isGlobalMode && problemSetId && (
+            <button
               onClick={() => setDrawerTab('activity')}
               title="Activity"
               aria-label="Activity"
@@ -471,6 +489,10 @@ export function IronclawDrawer({
         )}
 
         {/* Activity tab content — autonomous operations log */}
+        {drawerTab === 'tasks' && problemSetId && (
+          <IronclawTasksPanel problemSetId={problemSetId} />
+        )}
+
         {drawerTab === 'activity' && problemSetId && (
           <div className="flex-1 overflow-hidden flex flex-col">
             <IronclawActivityFeed problemSetId={problemSetId} />
