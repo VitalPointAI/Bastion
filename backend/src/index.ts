@@ -652,6 +652,29 @@ server.listen(port, async () => {
           if (result.rowCount && result.rowCount > 0) {
             console.log(`[ironclaw] Cleared ${result.rowCount} orphaned routine_runs`);
           }
+
+          // Purge stale pending agent_jobs (and their FK dependents).
+          // Jobs stuck in 'pending' for >1 hour are orphans — normal jobs
+          // complete in ~2 min.  Without this, auth failures or container
+          // restarts cause hundreds of zombie jobs to accumulate and clog
+          // the worker queue.
+          const staleJobIds = await ironclawPool.query(
+            `SELECT id FROM agent_jobs
+             WHERE status = 'pending' AND created_at < NOW() - INTERVAL '1 hour'`,
+          );
+          if (staleJobIds.rowCount && staleJobIds.rowCount > 0) {
+            const ids = staleJobIds.rows.map((r: { id: string }) => r.id);
+            await ironclawPool.query(
+              `DELETE FROM job_events WHERE job_id = ANY($1::uuid[])`, [ids],
+            );
+            await ironclawPool.query(
+              `DELETE FROM routine_runs WHERE job_id = ANY($1::uuid[])`, [ids],
+            );
+            const deleted = await ironclawPool.query(
+              `DELETE FROM agent_jobs WHERE id = ANY($1::uuid[])`, [ids],
+            );
+            console.log(`[ironclaw] Purged ${deleted.rowCount} stale pending agent_jobs`);
+          }
         } catch (err) {
           console.warn('[ironclaw] Orphan cleanup failed (non-fatal):', err instanceof Error ? err.message : err);
         }
