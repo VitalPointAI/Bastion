@@ -245,7 +245,7 @@ export class IronclawClient {
     const sentAt = new Date();
 
     // 2. Send async (fire-and-forget — Ironclaw returns immediately with message_id)
-    const { message_id: ourMessageId } = await this.sendMessageAsync(threadId, content);
+    await this.sendMessageAsync(threadId, content);
 
     // 3. Find the conversation (may be created by this first message)
     let conversationId: string | null = null;
