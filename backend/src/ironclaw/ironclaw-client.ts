@@ -257,7 +257,11 @@ export class IronclawClient {
       await new Promise((r) => setTimeout(r, pollIntervalMs));
 
       try {
-        // Resolve conversation if not yet found
+        // Resolve conversation if not yet found.
+        // Ironclaw v0.24 creates conversations with user_id='default' and
+        // does not populate thread_id from the webhook payload. Try multiple
+        // strategies: thread_id match, then the newest conversation created
+        // after we sent our message (scoped to the http channel).
         if (!conversationId) {
           const convResult = await this.pool.query(
             `SELECT id FROM conversations WHERE thread_id = $1 LIMIT 1`,
@@ -266,7 +270,21 @@ export class IronclawClient {
           if (convResult.rows.length > 0) {
             conversationId = convResult.rows[0].id;
           } else {
-            continue; // Conversation not created yet
+            // Fallback: find the conversation that contains a user message
+            // created just after sentAt (within a small window).
+            const fallback = await this.pool.query(
+              `SELECT c.id FROM conversations c
+               JOIN conversation_messages cm ON cm.conversation_id = c.id
+               WHERE cm.role = 'user' AND cm.created_at >= $1
+                 AND c.channel = 'http'
+               ORDER BY cm.created_at ASC LIMIT 1`,
+              [sentAt],
+            );
+            if (fallback.rows.length > 0) {
+              conversationId = fallback.rows[0].id;
+            } else {
+              continue; // Conversation not created yet
+            }
           }
         }
 
