@@ -157,7 +157,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_update_section',
-    description: 'Update a specific section of the operational design from interview output',
+    description: 'Update a specific section of the operational design. For cog-analysis, put ALL content inside the data field using this structure: { friendly: { cog_statement: "...", critical_components: [{label, description}], critical_requirements: [{label, description}], critical_vulnerabilities: [{label, description}] }, adversary: { ... } }',
     inputSchema: {
       type: 'object',
       properties: {
@@ -167,7 +167,10 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
           enum: ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'],
           description: 'Design section to update',
         },
-        data: { type: 'object', description: 'Section data to merge/replace' },
+        data: {
+          type: 'object',
+          description: 'Section content. For cog-analysis: { friendly: { cog_statement: "label", critical_components: [{label, description}], critical_requirements: [{label, description}], critical_vulnerabilities: [{label, description}] }, adversary: { ... } }',
+        },
         partial: { type: 'boolean', description: 'True for incremental updates, false for full section replacement' },
       },
       required: ['problem_set_id', 'section', 'data'],

@@ -667,7 +667,25 @@ function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unk
 const designUpdateSection: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const section = requireField<string>(payload, 'section');
-  let data = requireField<Record<string, unknown>>(payload, 'data');
+  let data = (payload.data ?? {}) as Record<string, unknown>;
+
+  // LLMs often put section content at the top level of the payload instead of
+  // nesting it under `data`. If `data` is empty, reconstruct it from the
+  // payload by stripping the control fields.
+  if (Object.keys(data).length === 0) {
+    const { problem_set_id: _ps, section: _sec, data: _d, partial: _p, ...rest } = payload;
+    if (Object.keys(rest).length > 0) {
+      data = rest;
+      console.log('[designUpdateSection] data was empty — reconstructed from payload top-level keys: %s',
+        Object.keys(rest).join(', '));
+    }
+  }
+
+  console.log('[designUpdateSection] section=%s, data keys=%s, payload=%s',
+    section,
+    Object.keys(data).join(','),
+    JSON.stringify(payload).slice(0, 3000),
+  );
 
   // Normalize CoG analysis data from LLM output into expected tree structure
   if (section === 'cog-analysis') {
