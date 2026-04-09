@@ -891,7 +891,7 @@ Key capabilities:
 **Goal:** Extend the DID registry smart contract with structured caveat fields (classification, releasability, geographic bounds, ROE tier, time windows, employment constraints) and contract-level enforcement via `check_employment_authorized()` view method. Add role-based permissions so resource owners and problem set admins can update caveats. Backend: extend Resource types, wire registration to store DIDs on-chain with caveats, add `updateResourceCaveats` and `checkEmploymentAuth` endpoints, migrate existing resources on-chain. Frontend: add Security & Caveats editor to ResourceDetailPanel — permission-gated to owner/admin. Deploy updated contract to testnet. Demo story: blockchain is the single source of truth for how resources can be employed.
 **Requirements**: Smart contract caveat enforcement, role-based caveat management, on-chain resource DID registration, frontend caveat editor, testnet deployment
 **Depends on:** Phase 27 (Resource Registry)
-**Plans:** 3/3 plans complete
+**Plans:** 4 plans (3 complete + 1 gap closure)
 
 Plans:
 - [ ] 58-01-PLAN.md -- Smart contract caveat extension (TDD: ResourceCaveats struct, update/check/get methods, unit tests)
@@ -944,7 +944,7 @@ Plans:
 **Goal:** Eliminate duplicate nodes from the knowledge graph by integrating entity resolution into the ingestion pipeline; add name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates via resolution API; add canonical alias registry for common name variants (US/USA/United States, PRC/China, etc.); wire resolution into the autonomous document intelligence team (Phase 40) extraction flow; add dedup metrics to graph stats endpoint
 **Requirements**: [DEDUP-01, DEDUP-02, DEDUP-03, DEDUP-04, DEDUP-05, DEDUP-06, DEDUP-07]
 **Depends on:** Phase 40, Phase 47 (leverages existing resolution-service.ts infrastructure)
-**Plans:** 3/3 plans complete
+**Plans:** 4 plans (3 complete + 1 gap closure)
 
 **Context:**
 Investigation revealed 28,800+ nodes in the knowledge graph with significant duplication caused by:
@@ -971,7 +971,7 @@ Plans:
 **Goal:** Route OSINT feed events through the Phase 40 doc-intelligence agent team instead of the standalone osint-entity-extractor.ts. Give agents proper tools/skills for graph operations (actor MERGE, relationship creation, entity resolution, containerIds scoping). Apply trust gates, NATO quality ratings, and multi-specialist analysis to OSINT events. Retire the ad-hoc LLM extraction path that bypasses agent quality controls.
 **Requirements**: [OSINT-63-01, OSINT-63-02, OSINT-63-03, OSINT-63-04, OSINT-63-05, OSINT-63-06, OSINT-63-07]
 **Depends on:** Phase 40, Phase 62
-**Plans:** 3/3 plans complete
+**Plans:** 4 plans (3 complete + 1 gap closure)
 
 **Context:**
 Currently two completely separate entity extraction paths exist:
@@ -997,12 +997,13 @@ Plans:
 **Goal:** Replace synchronous webhook chat with an event-driven SSE architecture. User messages are fire-and-forget POSTs; Ironclaw autonomously executes tools and streams back results via server-sent events. Event history is persisted server-side so reconnecting clients can catch up. Specialist agent delegation becomes visible as nested event streams.
 **Requirements**: SSE endpoint, event persistence table, event types (ack, tool_call, tool_result, delegation, progress, response, error), reconnection with last-event-id, frontend EventSource integration
 **Depends on:** Phase 66
-**Plans:** 3 plans
+**Plans:** 4 plans (3 complete + 1 gap closure)
 
 Plans:
-- [ ] 67-01-PLAN.md -- Backend SSE foundation: event types, event store, SSE endpoint with Last-Event-ID replay
-- [ ] 67-02-PLAN.md -- Backend service wiring: replace publishToChannel with SSE event emission, simulated token streaming
-- [ ] 67-03-PLAN.md -- Frontend EventSource integration, SSE UI components (ToolCallCard, DelegationNotice, InlineError, SSEConnectionIndicator), typewriter streaming
+- [x] 67-01-PLAN.md -- Backend SSE foundation: event types, event store, SSE endpoint with Last-Event-ID replay
+- [x] 67-02-PLAN.md -- Backend service wiring: replace publishToChannel with SSE event emission, simulated token streaming
+- [x] 67-03-PLAN.md -- Frontend EventSource integration, SSE UI components (ToolCallCard, DelegationNotice, InlineError, SSEConnectionIndicator), typewriter streaming
+- [ ] 67-04-PLAN.md -- Gap closure: wire SSE UI components into IronclawDrawer and IronclawContext
 
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
@@ -1277,7 +1278,7 @@ Plans:
 **Goal:** Replace the current tab structure (COP/Decide/Design/Campaign/Train/Overview) with a doctrinal lifecycle flow (Understand/Design/Plan/Direct/COP/Assess) that guides users through the military planning process
 **Depends on:** Phase 23
 **Research:** Unlikely
-**Plans:** 3/3 plans complete
+**Plans:** 4 plans (3 complete + 1 gap closure)
 
 **Context:**
 The current tabs are organized by feature category, not by how commanders and staff actually work through a problem. The doctrinal lifecycle — Understand → Design → Plan → Direct → COP → Assess — mirrors JP 5-0 and MDMP, guiding users through the natural progression from understanding the environment to assessing results. This is primarily a reorganization of existing components into doctrinally-aligned containers.
@@ -2149,4 +2150,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 42. Resources Tab — Inventory, Discovery & Onboarding | 6/6 | Complete   | 2026-03-12 |
 | 50. Universal Intelligence Input & Auto-Classification | 7/7 | Complete | 2026-03-18 |
 | 66. Ironclaw Memory Evolution, Concept Learning & Reinforcement | 7/6 | Complete    | 2026-04-05 |
-| 67. Ironclaw SSE Streaming & Event-Driven Agent Communication | 0/TBD | Not started | - |
+| 67. Ironclaw SSE Streaming & Event-Driven Agent Communication | 3/3 | Complete   | 2026-04-09 |
