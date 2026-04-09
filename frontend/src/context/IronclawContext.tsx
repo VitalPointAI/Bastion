@@ -23,7 +23,10 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import type { IronclawChatMessage, IronclawTaskData, SuggestionData, TrustDecision } from '../types/ironclaw.ts';
+import type {
+  IronclawChatMessage, IronclawTaskData, SuggestionData, TrustDecision,
+  SSEConnectionState, StreamingResponse, ToolCallState, DelegationState, InlineErrorState,
+} from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
 import { useDesignInterview } from '../hooks/useDesignInterview.ts';
 import { ironclawApi } from '../lib/ironclaw-service.ts';
@@ -107,6 +110,20 @@ interface IronclawContextValue {
   pendingDecisions: Decision[];
   /** Force re-fetch of pending decisions */
   refreshPendingDecisions: () => void;
+  /** SSE connection state: connecting | open | closed */
+  sseState: SSEConnectionState;
+  /** In-progress streaming response (delta text accumulating) */
+  streamingResponse: StreamingResponse | null;
+  /** Active tool calls being displayed in chat */
+  toolCalls: ToolCallState[];
+  /** Active delegation notices */
+  delegations: DelegationState[];
+  /** Inline errors displayed in chat */
+  inlineErrors: InlineErrorState[];
+  /** Update tool call expanded state */
+  setToolCalls: React.Dispatch<React.SetStateAction<ToolCallState[]>>;
+  /** Update inline error retrying state */
+  setInlineErrors: React.Dispatch<React.SetStateAction<InlineErrorState[]>>;
 }
 
 const IronclawContext = createContext<IronclawContextValue | null>(null);
@@ -413,6 +430,13 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onCreateThread={ironclaw.createThread}
         onDeleteThread={ironclaw.deleteThread}
         problemSetId={activeProblemSetId}
+        sseState={ironclaw.sseState}
+        streamingResponse={ironclaw.streamingResponse}
+        toolCalls={ironclaw.toolCalls}
+        delegations={ironclaw.delegations}
+        inlineErrors={ironclaw.inlineErrors}
+        setToolCalls={ironclaw.setToolCalls}
+        setInlineErrors={ironclaw.setInlineErrors}
       />
     </IronclawContext.Provider>
   );
