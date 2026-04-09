@@ -1,29 +1,25 @@
 /**
- * useIronclaw -- WebSocket + state management hook for Ironclaw chat
+ * useIronclaw -- SSE + state management hook for Ironclaw chat
  *
- * Manages: drawer open/close, chat messages, WebSocket connection,
+ * Manages: drawer open/close, chat messages, SSE (EventSource) connection,
  * message send with optimistic update, action confirmations, unread state.
  *
  * Supports two modes:
- * - Problem-set-scoped: channel ironclaw.{problemSetId}, full specialist + action support
- * - Global (no problem set): channel ironclaw._global, per-user conversation, no actions
+ * - Problem-set-scoped: EventSource to /api/ironclaw/:problemSetId/stream
+ * - Global (no problem set): EventSource to /api/ironclaw/global/stream
  *
- * WebSocket pattern follows useStaffNotifications (exponential backoff reconnect).
+ * EventSource auto-reconnects with Last-Event-ID — no manual backoff needed.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { IronclawChatMessage, TrustDecision } from '../types/ironclaw.ts';
+import type {
+  IronclawChatMessage, TrustDecision,
+  AckPayload, ToolCallPayload, ToolResultPayload,
+  DelegationPayload, ResponsePayload, ErrorPayload,
+  StreamingResponse, ToolCallState, DelegationState, InlineErrorState,
+  SSEConnectionState,
+} from '../types/ironclaw.ts';
 import { ironclawApi } from '../lib/ironclaw-service.ts';
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const WS_BASE_URL =
-  typeof window !== 'undefined'
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/messages`
-    : 'ws://localhost:3001/ws/messages';
-
-const RECONNECT_BASE_MS = 1000;
-const RECONNECT_MAX_MS = 30000;
 
 // ─── Message Context ─────────────────────────────────────────────────────────
 
@@ -64,6 +60,14 @@ export interface UseIronclawResult {
   createThread: (name: string) => Promise<void>;
   renameThread: (threadId: string, name: string) => Promise<void>;
   deleteThread: (threadId: string) => Promise<void>;
+  // SSE state
+  sseState: SSEConnectionState;
+  streamingResponse: StreamingResponse | null;
+  toolCalls: ToolCallState[];
+  delegations: DelegationState[];
+  inlineErrors: InlineErrorState[];
+  setToolCalls: React.Dispatch<React.SetStateAction<ToolCallState[]>>;
+  setInlineErrors: React.Dispatch<React.SetStateAction<InlineErrorState[]>>;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -80,8 +84,14 @@ export function useIronclaw(
   const [threads, setThreads] = useState<IronclawThread[]>([]);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
 
+  // SSE-specific state
+  const [sseState, setSseState] = useState<SSEConnectionState>('closed');
+  const [streamingResponse, setStreamingResponse] = useState<StreamingResponse | null>(null);
+  const [toolCalls, setToolCalls] = useState<ToolCallState[]>([]);
+  const [delegations, setDelegations] = useState<DelegationState[]>([]);
+  const [inlineErrors, setInlineErrors] = useState<InlineErrorState[]>([]);
+
   // Keep messageContext in a ref so sendMessage doesn't need to re-bind when context changes.
-  // This avoids rebuilding the callback (and WebSocket subscriptions) on every render.
   const messageContextRef = useRef<MessageContext | undefined>(messageContext);
   useEffect(() => {
     messageContextRef.current = messageContext;
@@ -118,263 +128,207 @@ export function useIronclaw(
     }).catch(() => {}); // Silent failure — fire-and-forget
   }, [problemSetId]);
 
-  // Refs for WebSocket lifecycle
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectDelayRef = useRef<number>(RECONNECT_BASE_MS);
+  // SSE EventSource refs
+  const esRef = useRef<EventSource | null>(null);
   const mountedRef = useRef(true);
   const isOpenRef = useRef(isOpen);
-  const channelRef = useRef<string>('');
 
-  // Keep isOpen ref in sync for WebSocket message handler
+  // Keep isOpen ref in sync
   useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
-  // ─── WebSocket connection ──────────────────────────────────────────────────
+  // ─── SSE connection ───────────────────────────────────────────────────────
 
-  const connectWebSocketRef = useRef<(() => void) | undefined>(undefined);
-
-  const connectWebSocket = useCallback((channelOverride?: string) => {
+  const connectSSE = useCallback(() => {
     if (!mountedRef.current) return;
 
-    // Problem-set-scoped channel is deterministic; global channel comes from API.
-    // Once we know the global channel (from history API), it's stored in channelRef
-    // so reconnects can reuse it without another API call.
-    const channel = channelOverride
-      ?? (problemSetId ? `ironclaw.${problemSetId}` : null)
-      ?? (channelRef.current || null);
-    if (!channel) return; // Global mode first connect: wait for channel from history API
-    channelRef.current = channel;
+    // Close existing connection if any
+    esRef.current?.close();
 
-    const ws = new WebSocket(WS_BASE_URL);
-    wsRef.current = ws;
-    let openedAt = 0;
+    const url = problemSetId
+      ? `/api/ironclaw/${problemSetId}/stream`
+      : `/api/ironclaw/global/stream`;
 
-    ws.onopen = () => {
-      if (!mountedRef.current) {
-        ws.close();
-        return;
-      }
-      openedAt = Date.now();
+    setSseState('connecting');
+    const es = new EventSource(url, { withCredentials: true });
+    esRef.current = es;
+
+    es.onopen = () => {
+      if (!mountedRef.current) return;
+      setSseState('open');
       setIsConnected(true);
-      // Subscribe to the Ironclaw channel
-      ws.send(JSON.stringify({ type: 'subscribe', channel }));
     };
 
-    ws.onmessage = (event) => {
+    es.onerror = () => {
+      if (!mountedRef.current) return;
+      setSseState(es.readyState === EventSource.CONNECTING ? 'connecting' : 'closed');
+      setIsConnected(false);
+      // EventSource auto-reconnects with Last-Event-ID — no manual backoff needed
+    };
+
+    // --- Event Listeners ---
+
+    es.addEventListener('ack', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
       try {
-        const msg = JSON.parse(event.data as string) as {
-          type: string;
-          data?: Record<string, unknown>;
-        };
+        const data: AckPayload = JSON.parse(e.data as string);
+        setIsLoading(false);
+        // Filter by current thread if applicable
+        if (data.threadId && currentThreadIdRef.current && data.threadId !== currentThreadIdRef.current) return;
+      } catch {
+        // Malformed event data — discard silently (T-67-08)
+      }
+    });
 
-        if (msg.type !== 'message' || !msg.data) return;
+    es.addEventListener('response', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      try {
+        const data: ResponsePayload = JSON.parse(e.data as string);
+        // Filter by thread
+        if (data.threadId && currentThreadIdRef.current && data.threadId !== currentThreadIdRef.current) return;
 
-        // msg.data is a MessageEnvelope — the actual chat message is in .payload
-        const envelope = msg.data as Record<string, unknown>;
-        const envelopeMessageType = (envelope.messageType ?? envelope.message_type) as string | undefined;
-
-        // Handle autonomous activity messages — surface as system notifications in chat
-        if (envelopeMessageType === 'ironclaw.autonomous-activity') {
-          const activity = (envelope.payload ?? envelope) as Record<string, unknown>;
-          const actSeverity = (activity.severity as string) ?? 'informational';
-          const actSummary = (activity.summary as string) ?? 'Autonomous activity detected';
-          const actType = (activity.activityType as string) ?? 'unknown';
-
-          // Only surface urgent/critical in chat — routine/informational stay in Activity tab
-          if (actSeverity === 'critical' || actSeverity === 'urgent') {
-            const severityIcon = actSeverity === 'critical' ? '\u{1F6A8}' : '\u26a0\ufe0f';
-            const chatMsg: IronclawChatMessage = {
-              id: (activity.activityId as string) ?? crypto.randomUUID(),
-              problemSetId: problemSetId ?? '_global',
-              content: `${severityIcon} **${actSeverity.toUpperCase()} — ${actType.replace(/_/g, ' ')}**\n\n${actSummary}`,
-              sender: 'ironclaw',
-              createdAt: (activity.createdAt as string) ?? new Date().toISOString(),
-            };
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === chatMsg.id)) return prev;
-              return [...prev, chatMsg];
-            });
-          }
-          return;
-        }
-
-        const incoming = (envelope.payload ?? envelope) as Record<string, unknown>;
-
-        // Check if this is a step progress update for an existing message
-        if (incoming.stepProgress || incoming.step_progress) {
-          const actionId = (incoming.action_id ?? incoming.actionId) as string | undefined;
-          if (actionId) {
-            setMessages((prev) =>
-              prev.map((m) => {
-                if (m.actionCard?.actionId === actionId || m.stepProgress?.actionId === actionId) {
-                  return {
-                    ...m,
-                    stepProgress: (incoming.stepProgress ?? incoming.step_progress) as IronclawChatMessage['stepProgress'],
-                  };
-                }
-                return m;
-              }),
-            );
-            return;
-          }
-        }
-
-        // Regular message -- append to list
-        const chatMsg: IronclawChatMessage = {
-          id: (incoming.id ?? crypto.randomUUID()) as string,
-          problemSetId: (incoming.problem_set_id ?? incoming.problemSetId ?? problemSetId ?? '_global') as string,
-          content: (incoming.content ?? '') as string,
-          sender: (incoming.sender ?? 'ironclaw') as IronclawChatMessage['sender'],
-          specialistId: (incoming.specialist_id ?? incoming.specialistId) as string | undefined,
-          specialistDisplayName: (incoming.specialist_display_name ?? incoming.specialistDisplayName) as string | undefined,
-          delegatedBy: (incoming.delegated_by ?? incoming.delegatedBy) as string | undefined,
-          actionCard: (() => {
-            const raw = (incoming.action_card ?? incoming.actionCard) as Record<string, unknown> | undefined;
-            if (!raw) return undefined;
-            return {
-              actionId: (raw.action_id ?? raw.actionId) as string,
-              actionType: (raw.action_type ?? raw.actionType) as string,
-              description: (raw.description) as string,
-              detail: (raw.detail) as string | null | undefined,
-              riskLevel: (raw.risk_level ?? raw.riskLevel) as string,
-              options: (raw.options) as string[],
-            };
-          })() as IronclawChatMessage['actionCard'],
-          stepProgress: (incoming.step_progress ?? incoming.stepProgress) as IronclawChatMessage['stepProgress'],
-          suggestion: incoming.suggestion as IronclawChatMessage['suggestion'],
-          createdAt: (incoming.created_at ?? incoming.createdAt ?? new Date().toISOString()) as string,
-        };
-
-        // Skip user messages (already added optimistically) and deduplicate
-        if (chatMsg.sender === 'user') return;
-
-        // Filter by thread — only show messages for the currently active tab thread
-        const incomingThreadId = (incoming.thread_id ?? incoming.threadId) as string | null | undefined;
-        if (currentThreadIdRef.current && incomingThreadId && incomingThreadId !== currentThreadIdRef.current) {
-          // Message belongs to a different tab's thread — skip display but clear loading
+        if (data.delta) {
+          // Streaming token chunk — update streaming response
+          setStreamingResponse(prev => ({
+            content: (prev?.content ?? '') + data.content,
+            isStreaming: true,
+            threadId: data.threadId,
+          }));
+        } else if (data.done) {
+          // Final response — clear streaming, add to messages
+          setStreamingResponse(null);
+          const chatMsg: IronclawChatMessage = {
+            id: data.messageId || crypto.randomUUID(),
+            problemSetId: problemSetId || '',
+            content: data.content,
+            sender: data.sender,
+            specialistId: data.specialistId,
+            specialistDisplayName: data.specialistDisplayName,
+            threadId: data.threadId,
+            createdAt: new Date().toISOString(),
+          };
+          setMessages(prev => [...prev, chatMsg]);
+          if (!isOpenRef.current) setHasUnread(true);
           setIsLoading(false);
-          return;
+        } else {
+          // Non-delta, non-done: treat as complete single response
+          const chatMsg: IronclawChatMessage = {
+            id: data.messageId || crypto.randomUUID(),
+            problemSetId: problemSetId || '',
+            content: data.content,
+            sender: data.sender,
+            specialistId: data.specialistId,
+            specialistDisplayName: data.specialistDisplayName,
+            threadId: data.threadId,
+            createdAt: new Date().toISOString(),
+          };
+          setMessages(prev => [...prev, chatMsg]);
+          if (!isOpenRef.current) setHasUnread(true);
+          setIsLoading(false);
         }
+      } catch {
+        // Malformed event data — discard silently (T-67-08)
+      }
+    });
 
-        // Filter out empty messages and <think> tag artifacts
-        const cleanContent = (chatMsg.content ?? '')
-          .replace(/<think>[\s\S]*?<\/think>/g, '')
-          .replace(/<\/?think>/g, '')
-          .trim();
-
-        // Skip if message has no visible content (thinking artifacts, empty intermediates)
-        // unless it has an actionCard or suggestion (those are meaningful without text)
-        if (!cleanContent && !chatMsg.actionCard && !chatMsg.suggestion && !chatMsg.stepProgress) {
-          // Still a valid response — don't clear loading (Ironclaw is still working)
-          return;
-        }
-
-        // Update content to stripped version
-        chatMsg.content = cleanContent || chatMsg.content;
-
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === chatMsg.id)) return prev;
-          return [...prev, chatMsg];
+    es.addEventListener('tool_call', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      try {
+        const data: ToolCallPayload = JSON.parse(e.data as string);
+        setToolCalls(prev => {
+          const existing = prev.findIndex(tc => tc.toolName === data.toolName && tc.status === 'running');
+          if (existing >= 0) {
+            const updated = [...prev];
+            updated[existing] = { ...data, expanded: prev[existing].expanded };
+            return updated;
+          }
+          return [...prev, { ...data, expanded: false }];
         });
+      } catch {
+        // Malformed event data — discard silently (T-67-08)
+      }
+    });
 
-        // Mark unread if drawer is closed — only for real messages
-        if (!isOpenRef.current) {
-          setHasUnread(true);
-        }
+    es.addEventListener('tool_result', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      try {
+        const data: ToolResultPayload = JSON.parse(e.data as string);
+        setToolCalls(prev => prev.map(tc =>
+          tc.toolName === data.toolName && tc.status === 'running'
+            ? { ...tc, status: 'complete' as const, output: data.output, summary: data.summary, elapsed: data.elapsed, statusMessage: data.summary }
+            : tc
+        ));
+      } catch {
+        // Malformed event data — discard silently (T-67-08)
+      }
+    });
 
-        // Clear loading -- real response arrived from Ironclaw
+    es.addEventListener('delegation', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      try {
+        const data: DelegationPayload = JSON.parse(e.data as string);
+        setDelegations(prev => {
+          const existing = prev.findIndex(d => d.specialistId === data.specialistId);
+          if (existing >= 0) {
+            const updated = [...prev];
+            updated[existing] = data;
+            return updated;
+          }
+          return [...prev, data];
+        });
+      } catch {
+        // Malformed event data — discard silently (T-67-08)
+      }
+    });
+
+    es.addEventListener('progress', (_e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      // Progress events currently handled via tool_call status updates
+    });
+
+    es.addEventListener('error', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      // SSE protocol error (no data) vs application error (has data)
+      if (!e.data) return; // Protocol error — connection indicator handles this
+      try {
+        const data: ErrorPayload = JSON.parse(e.data as string);
+        setInlineErrors(prev => [...prev, { ...data, retrying: false }]);
         setIsLoading(false);
       } catch {
-        // Non-JSON or unexpected message -- ignore
+        // Malformed event data — discard silently (T-67-08)
       }
-    };
+    });
 
-    ws.onclose = () => {
-      if (!mountedRef.current) return;
-      setIsConnected(false);
-      // Only reset backoff if connection was stable (open > 5s)
-      if (openedAt && Date.now() - openedAt > 5000) {
-        reconnectDelayRef.current = RECONNECT_BASE_MS;
-      }
-      const delay = reconnectDelayRef.current;
-      reconnectDelayRef.current = Math.min(delay * 2, RECONNECT_MAX_MS);
-      reconnectTimerRef.current = setTimeout(() => {
-        if (mountedRef.current) {
-          connectWebSocketRef.current?.();
-        }
-      }, delay);
-    };
-
-    ws.onerror = () => {
-      if (reconnectDelayRef.current <= RECONNECT_BASE_MS * 4) {
-        console.warn('[useIronclaw] WebSocket connection failed, will retry');
-      }
-    };
   }, [problemSetId]);
 
-  useEffect(() => {
-    connectWebSocketRef.current = connectWebSocket;
-  }, [connectWebSocket]);
-
-  // ─── Lifecycle: load history + connect on problemSetId change ──────────────
+  // ─── Lifecycle: load history + connect SSE on problemSetId change ──────────
 
   useEffect(() => {
     mountedRef.current = true;
 
-    // Fetch history, then connect WebSocket.
-    // Global mode: history response includes the per-user channel name.
+    // Fetch history, then connect SSE.
     // Problem-set mode: skip unthreaded history load — the tab thread effect
-    // handles thread-scoped history. Loading all messages here causes stale
-    // cross-thread messages to flash before being replaced.
+    // handles thread-scoped history.
     ironclawApi
       .getHistory(problemSetId)
-      .then(({ messages: history, channel }) => {
+      .then(({ messages: history }) => {
         if (!mountedRef.current) return;
         // Only set messages from this fetch in global mode (no tab threads).
-        // In problem-set mode, the tab thread effect will load correct history.
         if (!problemSetId) {
           setMessages(history);
         }
-        // Connect with the channel from API (global) or derived (problem set)
-        connectWebSocket(channel);
+        connectSSE();
       })
       .catch((err) => {
         console.error('[useIronclaw] history fetch failed:', err);
         if (!mountedRef.current) return;
-
-        if (problemSetId) {
-          // Problem-set mode: channel is deterministic, connect directly
-          connectWebSocket();
-        } else {
-          // Global mode: channel comes from API which just failed.
-          // Retry history fetch after a short delay to get the channel name.
-          const retryDelay = 2000;
-          reconnectTimerRef.current = setTimeout(() => {
-            if (!mountedRef.current) return;
-            ironclawApi
-              .getHistory(null)
-              .then(({ messages: history, channel }) => {
-                if (!mountedRef.current) return;
-                setMessages(history);
-                connectWebSocket(channel);
-              })
-              .catch((retryErr) => {
-                console.error('[useIronclaw] global history retry failed:', retryErr);
-              });
-          }, retryDelay);
-        }
+        // Connect SSE regardless of history fetch failure
+        connectSSE();
       });
 
     return () => {
       mountedRef.current = false;
-
-      // Cancel any pending reconnect
-      if (reconnectTimerRef.current !== null) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
 
       // Cancel idle extraction timer
       if (idleTimerRef.current !== null) {
@@ -382,20 +336,11 @@ export function useIronclaw(
         idleTimerRef.current = null;
       }
 
-      // Unsubscribe and close WebSocket
-      const ws = wsRef.current;
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({
-            type: 'unsubscribe',
-            channel: channelRef.current,
-          }),
-        );
-        ws.close();
-      }
-      wsRef.current = null;
+      // Close SSE connection
+      esRef.current?.close();
+      esRef.current = null;
     };
-  }, [problemSetId, connectWebSocket]);
+  }, [problemSetId, connectSSE]);
 
   // ─── Drawer controls ──────────────────────────────────────────────────────
 
@@ -459,7 +404,7 @@ export function useIronclaw(
           problemSetId, content, mentionedAgent,
           messageContextRef.current, currentThreadIdRef.current ?? undefined,
         );
-        // Response will arrive via WebSocket -- isLoading cleared on ws message
+        // Response will arrive via SSE — isLoading cleared on ack or response event
 
         // Reset idle extraction timer — 5 minutes of inactivity triggers extraction
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -509,7 +454,6 @@ export function useIronclaw(
   // ─── Thread management ──────────────────────────────────────────────────
 
   // Auto-resolve tab thread when tab or problem set changes
-  // Each tab gets its own conversation thread so COP chat stays on COP, etc.
   const currentTab = messageContext?.currentTab;
   useEffect(() => {
     if (!problemSetId || !currentTab) { setThreads([]); setCurrentThreadId(null); return; }
@@ -619,5 +563,12 @@ export function useIronclaw(
     createThread,
     renameThread,
     deleteThread,
+    sseState,
+    streamingResponse,
+    toolCalls,
+    delegations,
+    inlineErrors,
+    setToolCalls,
+    setInlineErrors,
   };
 }
