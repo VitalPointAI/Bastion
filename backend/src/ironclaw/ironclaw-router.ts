@@ -26,8 +26,6 @@ import { ironclawUserMemoryStore } from './ironclaw-memory-store.js';
 import { autonomousActivityStore } from './autonomous-activity-store.js';
 import { conceptExtractionService } from './concept-extraction.js';
 import { conceptRouter } from './concept-router.js';
-import { handleSSEStream } from './ironclaw-sse.js';
-import { ironclawEventStore } from './ironclaw-event-store.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -248,25 +246,6 @@ function inferHonorific(name: string): string | null {
 // ---------------------------------------------------------------------------
 // Global (no problem set) endpoints — scoped per user
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// SSE stream endpoints (Phase 67)
-// NOTE: /global/stream MUST be registered before /:problemSetId/stream to
-// prevent Express from matching "global" as a problemSetId parameter.
-// ---------------------------------------------------------------------------
-
-/**
- * GET /global/stream
- * SSE stream for the authenticated user's global conversation (no problem set).
- * Scope is derived from the user's DID: _global_<userDid>
- */
-ironclawRouter.get('/global/stream', handleSSEStream);
-
-/**
- * GET /:problemSetId/stream
- * SSE stream for a specific problem set conversation.
- */
-ironclawRouter.get('/:problemSetId/stream', handleSSEStream);
 
 /**
  * POST /global/message
@@ -1459,10 +1438,3 @@ ironclawRouter.post('/:problemSetId/extract', async (req: Request, res: Response
     return res.status(500).json({ error: 'Failed to start extraction' });
   }
 });
-
-// ---------------------------------------------------------------------------
-// Startup: ensure ironclaw_events table exists (Phase 67)
-// ---------------------------------------------------------------------------
-ironclawEventStore.ensureTable().catch((err) =>
-  console.error('[ironclaw-router] Failed to ensure ironclaw_events table:', err),
-);

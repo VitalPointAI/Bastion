@@ -141,3 +141,56 @@ export interface IronclawMemoryEntry {
   updated_at: string;
   expires_at: string;
 }
+
+// ============================================================================
+// SSE Event Types (Phase 67)
+// ============================================================================
+
+export type IronclawSSEEventType = 'ack' | 'tool_call' | 'tool_result' | 'delegation' | 'progress' | 'response' | 'error';
+
+export interface AckPayload { messageId: string; threadId?: string; }
+export interface ToolCallPayload { toolName: string; status: StepStatus; statusMessage: string; input?: unknown; elapsed?: number; }
+export interface ToolResultPayload { toolName: string; output: unknown; summary: string; elapsed: number; }
+export interface DelegationPayload { specialistId: string; specialistDisplayName: string; status: 'delegating' | 'complete'; resultSummary?: string; }
+export interface ProgressPayload { step: number; totalSteps: number; label: string; }
+export interface ResponsePayload { content: string; delta?: boolean; done?: boolean; messageId?: string; threadId?: string; sender: 'ironclaw' | 'specialist'; specialistId?: string; specialistDisplayName?: string; }
+export interface ErrorPayload { message: string; code?: string; retryable: boolean; originalMessageId?: string; }
+
+/** Represents a streaming response being assembled from delta events */
+export interface StreamingResponse {
+  content: string;
+  isStreaming: boolean;
+  threadId?: string;
+}
+
+/** Tool call card state for progressive reveal (D-03, D-04) */
+export interface ToolCallState {
+  toolName: string;
+  status: StepStatus;
+  statusMessage: string;
+  input?: unknown;
+  output?: unknown;
+  summary?: string;
+  elapsed?: number;
+  expanded: boolean;
+}
+
+/** Delegation state for chat notice (D-09) */
+export interface DelegationState {
+  specialistId: string;
+  specialistDisplayName: string;
+  status: 'delegating' | 'complete';
+  resultSummary?: string;
+}
+
+/** Inline error state (D-06) */
+export interface InlineErrorState {
+  message: string;
+  code?: string;
+  retryable: boolean;
+  originalMessageId?: string;
+  retrying?: boolean;
+}
+
+/** SSE connection readiness */
+export type SSEConnectionState = 'connecting' | 'open' | 'closed';
