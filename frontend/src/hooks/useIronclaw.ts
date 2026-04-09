@@ -69,6 +69,8 @@ export interface UseIronclawResult {
   inlineErrors: InlineErrorState[];
   setToolCalls: React.Dispatch<React.SetStateAction<ToolCallState[]>>;
   setInlineErrors: React.Dispatch<React.SetStateAction<InlineErrorState[]>>;
+  /** Subscribe to data update events from Ironclaw — returns unsubscribe function */
+  onDataUpdate: (listener: (payload: DataUpdatedPayload) => void) => () => void;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────

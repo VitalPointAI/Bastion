@@ -171,9 +171,11 @@ describe('IronclawEventStore', () => {
     expect(IronclawEventType.response).toBe('response');
     expect(IronclawEventType.error).toBe('error');
 
-    // Verify all 7 types are present
+    expect(IronclawEventType.data_updated).toBe('data_updated');
+
+    // Verify all 8 types are present
     const types = Object.values(IronclawEventType);
-    expect(types).toHaveLength(7);
+    expect(types).toHaveLength(8);
   });
 
   // Bonus: singleton export exists

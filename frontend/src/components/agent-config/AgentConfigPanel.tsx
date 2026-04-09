@@ -26,13 +26,13 @@ import { AgentPreviewChat } from './components/AgentPreviewChat.tsx';
 
 type TabId = 'identity' | 'personality' | 'skills' | 'channels' | 'routines' | 'advanced';
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'identity', label: 'Identity' },
-  { id: 'personality', label: 'Personality' },
-  { id: 'skills', label: 'Skills' },
-  { id: 'channels', label: 'Channels' },
-  { id: 'routines', label: 'Routines' },
-  { id: 'advanced', label: 'Advanced' },
+const TABS: { id: TabId; label: string; tooltip: string }[] = [
+  { id: 'identity', label: 'Identity', tooltip: 'Identity' },
+  { id: 'personality', label: 'Persona', tooltip: 'Personality' },
+  { id: 'skills', label: 'Skills', tooltip: 'Skills' },
+  { id: 'channels', label: 'Chans', tooltip: 'Channels' },
+  { id: 'routines', label: 'Routines', tooltip: 'Routines' },
+  { id: 'advanced', label: 'Adv', tooltip: 'Advanced' },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -153,12 +153,13 @@ export function AgentConfigPanel({ userId, showPreview = true }: AgentConfigPane
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0 px-4 pt-2 border-b border-slate-700/60">
+      <div className="flex gap-0 px-2 pt-2 border-b border-slate-700/60 overflow-x-hidden">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors border-b-2 mr-1 ${
+            title={tab.tooltip}
+            className={`px-2 py-1.5 text-xs font-medium transition-colors border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === tab.id
                 ? 'border-blue-500 text-blue-300'
                 : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-600'
