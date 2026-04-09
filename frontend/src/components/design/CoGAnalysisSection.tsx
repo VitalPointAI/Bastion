@@ -15,52 +15,93 @@ import { CoGTree } from './CoGTree.tsx';
  * Agent-generated data may have a completely different schema
  * (e.g. root as a string instead of a CoGNode object).
  */
-function normalizeCoGTree(tree: unknown): CoGTreeType {
-  if (!tree || typeof tree !== 'object') return { root: null };
-  const t = tree as Record<string, unknown>;
-  if (t.root === null || t.root === undefined) return { root: null };
-  if (typeof t.root === 'string') {
-    // Agent returned root as a label string — wrap in a valid CoGNode
-    return {
-      root: {
-        id: crypto.randomUUID(),
-        type: 'cog',
-        label: t.root as string,
-        description: (t as Record<string, unknown>).description as string ?? '',
-        children: [],
-      },
-    };
-  }
-  if (typeof t.root === 'object') {
-    // Validate it looks like a CoGNode
-    const r = t.root as Record<string, unknown>;
-    if (typeof r.id === 'string' && typeof r.label === 'string') {
-      return { root: normalizeCoGNode(r) };
-    }
-    // Has some fields but not id/label — try to salvage
-    return {
-      root: {
-        id: (r.id as string) ?? crypto.randomUUID(),
-        type: 'cog',
-        label: (r.label as string) ?? (r.name as string) ?? 'Center of Gravity',
-        description: (r.description as string) ?? '',
-        children: Array.isArray(r.children) ? r.children.map((c: unknown) => normalizeCoGNode(c as Record<string, unknown>)) : [],
-      },
-    };
-  }
-  return { root: null };
-}
-
 function normalizeCoGNode(raw: Record<string, unknown>): CoGNode {
   return {
     id: (raw.id as string) ?? crypto.randomUUID(),
     type: (raw.type as CoGNode['type']) ?? 'cog',
-    label: (raw.label as string) ?? (raw.name as string) ?? '',
-    description: (raw.description as string) ?? '',
+    label: (raw.label as string) ?? (raw.name as string) ?? (raw.title as string) ?? '',
+    description: (raw.description as string) ?? (raw.assessment as string) ?? '',
     children: Array.isArray(raw.children)
       ? raw.children.map((c: unknown) => normalizeCoGNode(c as Record<string, unknown>))
       : [],
   };
+}
+
+/**
+ * Normalize a CoGTree from backend data. Handles:
+ * - Already correct: { root: { id, type, label, ... } }
+ * - Root as string: { root: "Alliance Cohesion..." }
+ * - Flat format: { cog_statement, critical_components: [...] }
+ * - Null/missing root
+ */
+function normalizeCoGTree(tree: unknown): CoGTreeType {
+  if (!tree || typeof tree !== 'object') return { root: null };
+  const t = tree as Record<string, unknown>;
+
+  // Standard format: { root: CoGNode }
+  if (t.root !== null && t.root !== undefined) {
+    if (typeof t.root === 'string') {
+      return {
+        root: {
+          id: crypto.randomUUID(),
+          type: 'cog',
+          label: t.root as string,
+          description: (t.description as string) ?? '',
+          children: [],
+        },
+      };
+    }
+    if (typeof t.root === 'object') {
+      const r = t.root as Record<string, unknown>;
+      return {
+        root: {
+          id: (r.id as string) ?? crypto.randomUUID(),
+          type: (r.type as CoGNode['type']) ?? 'cog',
+          label: (r.label as string) ?? (r.name as string) ?? 'Center of Gravity',
+          description: (r.description as string) ?? '',
+          children: Array.isArray(r.children)
+            ? r.children.map((c: unknown) => normalizeCoGNode(c as Record<string, unknown>))
+            : [],
+        },
+      };
+    }
+    return { root: null };
+  }
+
+  // Flat format from LLM: { cog_statement, critical_components: [...] }
+  const cogLabel = (t.cog_statement as string) ?? (t.cogStatement as string) ??
+    (t.label as string) ?? (t.name as string) ?? (t.statement as string);
+  if (cogLabel) {
+    const ccArr = (t.critical_components as unknown[]) ?? (t.criticalComponents as unknown[]) ?? [];
+    const crArr = (t.critical_requirements as unknown[]) ?? (t.criticalRequirements as unknown[]) ?? [];
+    const cvArr = (t.critical_vulnerabilities as unknown[]) ?? (t.criticalVulnerabilities as unknown[]) ?? [];
+
+    const children: CoGNode[] = [];
+    for (const item of ccArr) {
+      const obj = typeof item === 'string' ? { label: item } : (item as Record<string, unknown>);
+      children.push(normalizeCoGNode({ ...obj, type: 'critical-capability' }));
+    }
+    for (const item of crArr) {
+      const obj = typeof item === 'string' ? { label: item } : (item as Record<string, unknown>);
+      children.push(normalizeCoGNode({ ...obj, type: 'critical-requirement' }));
+    }
+    for (const item of cvArr) {
+      const obj = typeof item === 'string' ? { label: item } : (item as Record<string, unknown>);
+      children.push(normalizeCoGNode({ ...obj, type: 'critical-vulnerability' }));
+    }
+
+    return {
+      root: {
+        id: crypto.randomUUID(),
+        type: 'cog',
+        label: cogLabel,
+        description: (t.description as string) ?? (t.cog_description as string) ?? '',
+        children,
+      },
+    };
+  }
+
+  return { root: null };
 }
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
 import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';

@@ -6,6 +6,7 @@
  */
 
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { IronclawChatMessage, TrustDecision } from '../../types/ironclaw.ts';
 import { IronclawActionCard } from './IronclawActionCard.tsx';
 import { IronclawStepStream } from './IronclawStepStream.tsx';
@@ -104,6 +105,7 @@ export function IronclawMessage({ message, onActionDecision, isStreaming = false
             </span>
           ) : (
             <Markdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 // Render inline code with styling
                 code: ({ children, className }) => {

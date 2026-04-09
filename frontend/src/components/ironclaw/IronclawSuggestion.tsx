@@ -10,6 +10,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { SuggestionData } from '../../types/ironclaw.ts';
 
 interface IronclawSuggestionProps {
@@ -67,6 +68,7 @@ export function IronclawSuggestion({ suggestion, onAccept, onDismiss, onRevise }
       {mode === 'view' && (
         <div className="ironclaw-md text-sm text-gray-200 mb-2">
           <Markdown
+            remarkPlugins={[remarkGfm]}
             components={{
               p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
               strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,

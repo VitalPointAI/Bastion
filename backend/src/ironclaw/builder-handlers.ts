@@ -522,10 +522,165 @@ const skillUnassign: ActionHandler = async (payload, userDid) => {
 // Design Interview Handlers
 // ---------------------------------------------------------------------------
 
+/** Generate a simple UUID without importing crypto (used in sync normalizers) */
+function makeId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+/**
+ * Normalize a single CoG node from LLM output into the expected schema.
+ * Handles missing ids, alternate field names, and flat structures.
+ */
+function normalizeCoGNode(raw: Record<string, unknown>, nodeType: string): Record<string, unknown> {
+  return {
+    id: (raw.id as string) ?? makeId(),
+    type: (raw.type as string) ?? nodeType,
+    label: (raw.label as string) ?? (raw.name as string) ?? (raw.title as string) ?? '',
+    description: (raw.description as string) ?? (raw.assessment as string) ?? '',
+    children: Array.isArray(raw.children)
+      ? (raw.children as Record<string, unknown>[]).map(c => normalizeCoGNode(c, (c.type as string) ?? 'critical-capability'))
+      : [],
+  };
+}
+
+/**
+ * Normalize CoG analysis data from LLM output into the tree format the frontend expects:
+ * { friendly: { root: CoGNode | null }, adversary: { root: CoGNode | null } }
+ *
+ * Handles common LLM output patterns:
+ * 1. Already correct format: { friendly: { root: { ... } } }
+ * 2. Flat components: { friendly: { cog_statement, critical_components: [...] } }
+ * 3. Top-level flat: { cog_statement, critical_components: [...], side: 'friendly' }
+ * 4. Nested with snake_case keys
+ */
+function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unknown> {
+
+  function buildTreeFromFlat(side: Record<string, unknown>): Record<string, unknown> {
+    // If it already has a valid root object, normalize it
+    if (side.root && typeof side.root === 'object') {
+      const root = side.root as Record<string, unknown>;
+      return { root: normalizeCoGNode(root, 'cog') };
+    }
+    // If root is a string (just the CoG statement), build from flat fields
+    if (typeof side.root === 'string') {
+      return buildFromFlatFields(side, side.root as string);
+    }
+    // Check for flat structure: cog_statement or cogStatement + component arrays
+    const cogLabel = (side.cog_statement as string) ??
+      (side.cogStatement as string) ??
+      (side.cog as string) ??
+      (side.label as string) ??
+      (side.name as string) ??
+      (side.statement as string);
+    if (cogLabel) {
+      return buildFromFlatFields(side, cogLabel);
+    }
+    return { root: null };
+  }
+
+  function buildFromFlatFields(side: Record<string, unknown>, cogLabel: string): Record<string, unknown> {
+    const cogDescription = (side.description as string) ?? (side.cog_description as string) ?? '';
+
+    // Collect CC, CR, CV arrays
+    const ccArray = (side.critical_components as unknown[]) ?? (side.criticalComponents as unknown[]) ?? (side.cc as unknown[]) ?? [];
+    const crArray = (side.critical_requirements as unknown[]) ?? (side.criticalRequirements as unknown[]) ?? (side.cr as unknown[]) ?? [];
+    const cvArray = (side.critical_vulnerabilities as unknown[]) ?? (side.criticalVulnerabilities as unknown[]) ?? (side.cv as unknown[]) ?? [];
+
+    function makeNodes(arr: unknown[], type: string, childType?: string, childArr?: (parent: Record<string, unknown>) => unknown[]): Record<string, unknown>[] {
+      return arr.map((item) => {
+        const obj = (typeof item === 'string')
+          ? { label: item }
+          : (item as Record<string, unknown>);
+        const children = childArr ? childArr(obj) : [];
+        return normalizeCoGNode({
+          ...obj,
+          type,
+          children: Array.isArray(children)
+            ? children.map(c => typeof c === 'string' ? { label: c, type: childType } : c)
+            : [],
+        }, type);
+      });
+    }
+
+    // Build CC nodes; each CC can contain CR children, each CR can contain CV children
+    const ccNodes = makeNodes(ccArray, 'critical-capability', 'critical-requirement', (cc) => {
+      const crs = (cc.critical_requirements as unknown[]) ?? (cc.criticalRequirements as unknown[]) ?? (cc.requirements as unknown[]) ?? [];
+      return crs.map((cr) => {
+        const crObj = (typeof cr === 'string') ? { label: cr } : (cr as Record<string, unknown>);
+        const cvs = (crObj.critical_vulnerabilities as unknown[]) ?? (crObj.criticalVulnerabilities as unknown[]) ?? (crObj.vulnerabilities as unknown[]) ?? [];
+        return normalizeCoGNode({
+          ...crObj,
+          type: 'critical-requirement',
+          children: cvs.map(cv => typeof cv === 'string' ? { label: cv, type: 'critical-vulnerability' } : cv),
+        }, 'critical-requirement');
+      });
+    });
+
+    // If CR/CV were at the top level (not nested under CC), attach them as direct children
+    let topLevelCRNodes: Record<string, unknown>[] = [];
+    let topLevelCVNodes: Record<string, unknown>[] = [];
+    if (ccNodes.length === 0 || crArray.length > 0) {
+      topLevelCRNodes = makeNodes(crArray, 'critical-requirement', 'critical-vulnerability', (cr) => {
+        return (cr.critical_vulnerabilities as unknown[]) ?? (cr.criticalVulnerabilities as unknown[]) ?? (cr.vulnerabilities as unknown[]) ?? [];
+      });
+    }
+    if (ccNodes.length === 0 || cvArray.length > 0) {
+      topLevelCVNodes = makeNodes(cvArray, 'critical-vulnerability');
+    }
+
+    const allChildren = [...ccNodes, ...topLevelCRNodes, ...topLevelCVNodes];
+
+    return {
+      root: {
+        id: makeId(),
+        type: 'cog',
+        label: cogLabel,
+        description: cogDescription,
+        children: allChildren,
+      },
+    };
+  }
+
+  // Check if data already has friendly/adversary structure
+  const friendly = data.friendly as Record<string, unknown> | undefined;
+  const adversary = data.adversary as Record<string, unknown> | undefined;
+
+  if (friendly || adversary) {
+    return {
+      friendly: friendly ? buildTreeFromFlat(friendly) : { root: null },
+      adversary: adversary ? buildTreeFromFlat(adversary) : { root: null },
+    };
+  }
+
+  // Data might be a single side's analysis — check for side indicator
+  const side = (data.side as string) ?? 'friendly';
+  const tree = buildTreeFromFlat(data);
+  return {
+    friendly: side === 'friendly' ? tree : { root: null },
+    adversary: side === 'adversary' ? tree : { root: null },
+  };
+}
+
 const designUpdateSection: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const section = requireField<string>(payload, 'section');
-  const data = requireField<Record<string, unknown>>(payload, 'data');
+  let data = requireField<Record<string, unknown>>(payload, 'data');
+
+  // Normalize CoG analysis data from LLM output into expected tree structure
+  if (section === 'cog-analysis') {
+    // Preserve existing side when Ironclaw only updates one side
+    const { designStore } = await import('../design/design-store.js');
+    const existing = await designStore.getByProblemSetId(problemSetId);
+    const normalized = normalizeCoGAnalysis(data);
+    const norm = normalized as { friendly: { root: unknown }; adversary: { root: unknown } };
+    data = {
+      friendly: norm.friendly?.root ? norm.friendly : existing.cogAnalysis.friendly,
+      adversary: norm.adversary?.root ? norm.adversary : existing.cogAnalysis.adversary,
+    };
+  }
 
   const { designStore } = await import('../design/design-store.js');
   const result = await designStore.updateSection(problemSetId, section, data);
