@@ -233,8 +233,8 @@ const es = new EventSource(sseUrl, { withCredentials: true });
 es.addEventListener('ack', (e: MessageEvent) => { /* update loading state */ });
 es.addEventListener('tool_call', (e: MessageEvent) => { /* show tool progress */ });
 es.addEventListener('tool_result', (e: MessageEvent) => { /* update tool card */ });
-es.addEventListener('delegation', (e: MessageEvent) => { /* show delegation notice */ });
-es.addEventListener('progress', (e: MessageEvent) => { /* update progress indicator */ });
+es.addEventListener('delegation', (e: MessageEvent) => { /* delegation notice */ });
+es.addEventListener('progress', (e: MessageEvent) => { /* progress indicator */ });
 es.addEventListener('response', (e: MessageEvent) => { /* append message */ });
 es.addEventListener('error', (e: MessageEvent) => { /* show inline error */ });
 
@@ -447,7 +447,7 @@ export const ironclawEventStore = new IronclawEventStore();
 
 ```typescript
 // Replace WebSocket section in useIronclaw.ts
-// Key change: wsRef → esRef; connectWebSocket → connectSSE
+// Key change: wsRef -> esRef; connectWebSocket -> connectSSE
 
 const esRef = useRef<EventSource | null>(null);
 
@@ -494,7 +494,7 @@ return () => {
 | Custom token streaming buffers | Direct EventSource + append | 2023+ | Less code, same UX |
 
 **Note on token streaming options:**
-- Simulated: complete response → split by word → emit rapid `response` events with `delta: true` flag — no sidecar changes needed [ASSUMED to be viable]
+- Simulated: complete response -> split by word -> emit rapid `response` events with `delta: true` flag — no sidecar changes needed [ASSUMED to be viable]
 - True streaming: use Ironclaw port 3000 `/v1/chat/completions` with `stream: true` — requires refactoring `ironclaw-client.ts` to consume streaming HTTP response
 
 For Phase 67, simulated streaming is recommended to avoid scope expansion.
@@ -514,22 +514,25 @@ For Phase 67, simulated streaming is recommended to avoid scope expansion.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Token streaming approach (D-05)**
    - What we know: sidecar returns one complete response string via webhook
    - What's unclear: whether planner should implement simulated streaming (word chunks) or use sidecar's port 3000 streaming API
    - Recommendation: Default to simulated streaming in Phase 67; true streaming can be a future phase
+   - **RESOLVED:** Simulated word chunking adopted in Plan 02 Task 1 — complete response is split by whitespace into rapid `response` delta events, achieving typewriter effect without sidecar streaming API changes.
 
 2. **Thread filtering on SSE stream**
    - What we know: Users have tab-scoped threads; messages are filtered by threadId in WebSocket handler
    - What's unclear: Should the SSE stream be thread-scoped (only events for current thread) or scope-scoped (all threads, client filters)?
    - Recommendation: Scope-scoped stream (all threads, client filters by threadId) — matches D-11 single-stream decision
+   - **RESOLVED:** Scope-scoped stream adopted. Plan 01 streams all events for the scope; Plan 03 frontend filters by threadId client-side in useIronclaw.ts event listeners.
 
 3. **ironclaw_chat relationship to ironclaw_events for final response**
    - What we know: getHistory() reads from ironclaw_chat for the message thread view
    - What's unclear: Does a `response` event also write to ironclaw_chat, or does ironclaw_events replace ironclaw_chat?
    - Recommendation: Write final `response` events to BOTH tables — ironclaw_events for streaming/replay, ironclaw_chat for history display. Preserve backward compat.
+   - **RESOLVED:** Write-to-both adopted in Plan 02 Task 1 — `ironclawStore.addMessage()` retained for ironclaw_chat backward compatibility alongside `ironclawEventStore.append()` for SSE streaming.
 
 ---
 
@@ -557,7 +560,7 @@ No missing dependencies. No environment gaps block execution.
 | Quick run command | `bash -lc 'cd backend && npx vitest run --reporter=verbose 2>&1 | tail -20'` |
 | Full suite command | `bash -lc 'cd backend && npx vitest run 2>&1'` |
 
-### Phase Requirements → Test Map
+### Phase Requirements -> Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
@@ -570,8 +573,8 @@ No missing dependencies. No environment gaps block execution.
 
 ### Wave 0 Gaps
 
-- [ ] `backend/tests/ironclaw/ironclaw-event-store.test.ts` — covers SSE-02, SSE-03
-- [ ] `backend/tests/ironclaw/sse-reconnect.test.ts` — covers SSE-04
+- [ ] `backend/src/ironclaw/__tests__/ironclaw-event-store.test.ts` — covers SSE-02, SSE-03 (created by Plan 01 Task 1)
+- [ ] `backend/tests/ironclaw/sse-reconnect.test.ts` — covers SSE-04 (not covered by current plans — integration test deferred to post-execution verification)
 - [ ] Framework already installed (vitest in devDependencies)
 
 ---
