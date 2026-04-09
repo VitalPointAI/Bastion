@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 65-05-PLAN.md — Phase 65 Ironclaw Autonomous Operations complete
-last_updated: "2026-04-05T20:58:24.345Z"
-last_activity: 2026-04-05
+stopped_at: Phase 67 UI-SPEC approved
+last_updated: "2026-04-09T11:34:27.288Z"
+last_activity: "2026-04-06 - Completed quick task 260406-lkq: log monitor agent for container error detection and auto-fix PRs"
 progress:
-  total_phases: 81
+  total_phases: 82
   completed_phases: 62
   total_plans: 496
   completed_plans: 498
@@ -1250,6 +1250,7 @@ Recent decisions affecting current work:
 - Phase 61 added: Responsive UI & Mobile Optimization — Full responsive design across all screen sizes, fix wrapping/overflow in layout shells, add intermediate breakpoints, mobile-specific UX
 - Phase 62 added: Knowledge Graph Entity Deduplication & Auto-Resolution — Eliminate duplicate nodes (28,800+ found) by integrating entity resolution into ingestion pipeline, name canonicalization, canonical alias registry, batch-merge existing duplicates, dedup metrics
 - Phase 63 added: Unified OSINT Agent Ingestion — Route OSINT events through doc-intelligence agent team, give agents graph tools/skills, apply trust gates and NATO quality ratings, retire standalone osint-entity-extractor.ts
+- Phase 67 added: Ironclaw SSE Streaming & Event-Driven Agent Communication — Replace synchronous webhook chat with event-driven SSE architecture, persisted event history, visible specialist delegation, reconnection support
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 
@@ -2015,7 +2016,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-30T23:52:42.309Z
-Stopped at: Completed 65-05-PLAN.md — Phase 65 Ironclaw Autonomous Operations complete
-Resume file: None
+Last session: 2026-04-09T11:34:27.263Z
+Stopped at: Phase 67 UI-SPEC approved
+Resume file: .planning/phases/67-ironclaw-sse-streaming-event-driven-agent-communication/67-UI-SPEC.md
 Next action: Continue Phase 40 plan 02
