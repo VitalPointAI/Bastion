@@ -394,9 +394,12 @@ export class IronclawService {
     ].filter(Boolean).join('\n');
     const messageForAi = preamble ? `${preamble}\n${content}` : content;
 
-    // 4. Send to Ironclaw async and poll DB for the response.
-    //    No arbitrary timeout — polls until Ironclaw's job completes or fails.
-    const response = await ironclawClient.sendMessageAndWait(session.id, messageForAi);
+    // 4. Send to Ironclaw synchronously (wait_for_response=true).
+    //    The async poll approach broke with Ironclaw v0.24 which no longer
+    //    populates thread_id on conversations, making poll-based lookup unreliable.
+    //    Synchronous webhook blocks until Ironclaw produces a response or times out.
+    const result = await ironclawClient.sendMessage(session.id, messageForAi, undefined, 600_000);
+    const response = result.response;
 
     // 5. Process the response — pass threadId so the response is stored in the same thread
     if (response) {
