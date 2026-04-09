@@ -18,6 +18,7 @@ import { OperationalApproachSection } from '../design/OperationalApproachSection
 import type { ProblemFramingData, CoGAnalysis, LineOfEffort, OperationalApproach } from '../../lib/design-service.ts';
 import { DecisionGateBanner, GateSubmitButton, DecisionGateTimeline } from '../governance/index.ts';
 import type { DecisionGate } from '../../lib/gate-service';
+import { useIronclawDataRefresh } from '../../hooks/useIronclawDataRefresh.ts';
 
 type DesignView = 'overview' | 'problem-framing' | 'cog-analysis' | 'lines-of-effort' | 'operational-approach';
 
@@ -44,7 +45,6 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [_selectedGate, setSelectedGate] = useState<DecisionGate | null>(null);
-
   const handleGateDetailClick = useCallback((gate: DecisionGate) => {
     setSelectedGate(gate);
     console.log('[DesignTab] Gate detail:', gate.id, gate.gate_type, gate.status);
@@ -67,6 +67,9 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
   useEffect(() => {
     loadDesign();
   }, [loadDesign]);
+
+  // Re-fetch design data when Ironclaw updates the design domain
+  useIronclawDataRefresh('design', problemSetId, loadDesign);
 
   const handleSectionUpdate = useCallback(async (section: string, data: unknown) => {
     try {
@@ -109,6 +112,7 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
       decisionHistory={
         <DecisionGateTimeline tabId="design" onEntryClick={handleGateDetailClick} />
       }
+      contentClassName={selectedView === 'cog-analysis' ? 'tab-content--full-height' : undefined}
     >
       {/* Decision gate banner for commanders */}
       <DecisionGateBanner tabId="design" />

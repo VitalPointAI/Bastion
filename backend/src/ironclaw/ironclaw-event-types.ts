@@ -18,6 +18,7 @@ export const IronclawEventType = {
   progress: 'progress',
   response: 'response',
   error: 'error',
+  data_updated: 'data_updated',
 } as const;
 export type IronclawEventType = (typeof IronclawEventType)[keyof typeof IronclawEventType];
 
@@ -102,6 +103,20 @@ export interface ErrorPayload {
   originalMessageId?: string;
 }
 
+/**
+ * data_updated — a data domain was modified by Ironclaw or an agent.
+ * Frontend tabs should re-fetch their data when their domain matches.
+ *
+ * Domains: design, intel, brain, objectives, problem-set, resources, gates,
+ *          agents, tools, teams, skills, activity
+ */
+export interface DataUpdatedPayload {
+  domain: string;
+  section?: string;
+  problemSetId: string;
+  source: string;
+}
+
 // ---------------------------------------------------------------------------
 // Generic event envelope (matches ironclaw_events DB row)
 // ---------------------------------------------------------------------------
@@ -128,4 +143,5 @@ export interface IronclawPayloadMap {
   progress: ProgressPayload;
   response: ResponsePayload;
   error: ErrorPayload;
+  data_updated: DataUpdatedPayload;
 }

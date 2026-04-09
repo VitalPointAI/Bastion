@@ -26,6 +26,7 @@ import { useLocation } from 'react-router-dom';
 import type {
   IronclawChatMessage, IronclawTaskData, SuggestionData, TrustDecision,
   SSEConnectionState, StreamingResponse, ToolCallState, DelegationState, InlineErrorState,
+  DataUpdatedPayload,
 } from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
 import { useDesignInterview } from '../hooks/useDesignInterview.ts';
@@ -124,6 +125,8 @@ interface IronclawContextValue {
   setToolCalls: React.Dispatch<React.SetStateAction<ToolCallState[]>>;
   /** Update inline error retrying state */
   setInlineErrors: React.Dispatch<React.SetStateAction<InlineErrorState[]>>;
+  /** Subscribe to data updates from Ironclaw — returns unsubscribe function */
+  onDataUpdate: (listener: (payload: DataUpdatedPayload) => void) => () => void;
 }
 
 const IronclawContext = createContext<IronclawContextValue | null>(null);

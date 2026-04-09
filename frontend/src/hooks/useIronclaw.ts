@@ -16,6 +16,7 @@ import type {
   IronclawChatMessage, TrustDecision,
   AckPayload, ToolCallPayload, ToolResultPayload,
   DelegationPayload, ResponsePayload, ErrorPayload,
+  DataUpdatedPayload,
   StreamingResponse, ToolCallState, DelegationState, InlineErrorState,
   SSEConnectionState,
 } from '../types/ironclaw.ts';
@@ -90,6 +91,14 @@ export function useIronclaw(
   const [toolCalls, setToolCalls] = useState<ToolCallState[]>([]);
   const [delegations, setDelegations] = useState<DelegationState[]>([]);
   const [inlineErrors, setInlineErrors] = useState<InlineErrorState[]>([]);
+
+  // Data update listeners — notified when Ironclaw updates any data domain
+  const dataUpdateListenersRef = useRef<Set<(payload: DataUpdatedPayload) => void>>(new Set());
+
+  const onDataUpdate = useCallback((listener: (payload: DataUpdatedPayload) => void) => {
+    dataUpdateListenersRef.current.add(listener);
+    return () => { dataUpdateListenersRef.current.delete(listener); };
+  }, []);
 
   // Keep messageContext in a ref so sendMessage doesn't need to re-bind when context changes.
   const messageContextRef = useRef<MessageContext | undefined>(messageContext);
@@ -297,6 +306,16 @@ export function useIronclaw(
         setIsLoading(false);
       } catch {
         // Malformed event data — discard silently (T-67-08)
+      }
+    });
+
+    es.addEventListener('data_updated', (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      try {
+        const data: DataUpdatedPayload = JSON.parse(e.data as string);
+        dataUpdateListenersRef.current.forEach(fn => fn(data));
+      } catch {
+        // Malformed event data — discard silently
       }
     });
 
@@ -570,5 +589,6 @@ export function useIronclaw(
     inlineErrors,
     setToolCalls,
     setInlineErrors,
+    onDataUpdate,
   };
 }

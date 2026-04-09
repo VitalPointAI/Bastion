@@ -146,7 +146,7 @@ export interface IronclawMemoryEntry {
 // SSE Event Types (Phase 67)
 // ============================================================================
 
-export type IronclawSSEEventType = 'ack' | 'tool_call' | 'tool_result' | 'delegation' | 'progress' | 'response' | 'error';
+export type IronclawSSEEventType = 'ack' | 'tool_call' | 'tool_result' | 'delegation' | 'progress' | 'response' | 'error' | 'data_updated';
 
 export interface AckPayload { messageId: string; threadId?: string; }
 export interface ToolCallPayload { toolName: string; status: StepStatus; statusMessage: string; input?: unknown; elapsed?: number; }
@@ -155,6 +155,7 @@ export interface DelegationPayload { specialistId: string; specialistDisplayName
 export interface ProgressPayload { step: number; totalSteps: number; label: string; }
 export interface ResponsePayload { content: string; delta?: boolean; done?: boolean; messageId?: string; threadId?: string; sender: 'ironclaw' | 'specialist'; specialistId?: string; specialistDisplayName?: string; }
 export interface ErrorPayload { message: string; code?: string; retryable: boolean; originalMessageId?: string; }
+export interface DataUpdatedPayload { domain: string; section?: string; problemSetId: string; source: string; }
 
 /** Represents a streaming response being assembled from delta events */
 export interface StreamingResponse {

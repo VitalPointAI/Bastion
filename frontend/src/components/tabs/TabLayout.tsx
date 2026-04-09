@@ -18,9 +18,11 @@ export interface TabLayoutProps {
   header?: ReactNode;
   /** Optional slot for decision history section below sidebar items */
   decisionHistory?: ReactNode;
+  /** Additional CSS class(es) for the content area */
+  contentClassName?: string;
 }
 
-export function TabLayout({ items, selectedItem, onSelectItem, children, header, decisionHistory }: TabLayoutProps) {
+export function TabLayout({ items, selectedItem, onSelectItem, children, header, decisionHistory, contentClassName }: TabLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showSidebar = items.length > 1;
 
@@ -64,7 +66,7 @@ export function TabLayout({ items, selectedItem, onSelectItem, children, header,
           )}
         </aside>
       )}
-      <main className="tab-content">
+      <main className={`tab-content${contentClassName ? ` ${contentClassName}` : ''}`}>
         {children}
       </main>
     </div>

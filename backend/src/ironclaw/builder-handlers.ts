@@ -47,6 +47,28 @@ function requireField<T>(
   return value as T;
 }
 
+/**
+ * Emit a data_updated SSE event so the frontend can re-fetch affected data.
+ * Non-blocking — logs a warning on failure but never throws.
+ */
+async function emitDataUpdated(
+  problemSetId: string,
+  userDid: string,
+  domain: string,
+  section?: string,
+): Promise<void> {
+  try {
+    const { ironclawEventStore } = await import('./ironclaw-event-store.js');
+    const { IronclawEventType } = await import('./ironclaw-event-types.js');
+    await ironclawEventStore.append(
+      problemSetId, userDid, IronclawEventType.data_updated,
+      { domain, section, problemSetId, source: 'ironclaw' },
+    );
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to emit data_updated SSE event:', err);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Agent Handlers
 // ---------------------------------------------------------------------------
@@ -96,10 +118,11 @@ const agentCreate: ActionHandler = async (payload, userDid) => {
   };
 
   const registered = await registry.registerAgent(manifest);
+  await emitDataUpdated('global', userDid, 'agents');
   return { agentId: registered.agentId, status: 'created' };
 };
 
-const agentUpdate: ActionHandler = async (payload, _userDid) => {
+const agentUpdate: ActionHandler = async (payload, userDid) => {
   const agentId = requireField<string>(payload, 'agentId');
   const { getAgentStore } = await import('../agents/agent-store.js');
   const store = getAgentStore();
@@ -111,18 +134,20 @@ const agentUpdate: ActionHandler = async (payload, _userDid) => {
 
   // Cast status to known literal union — unknown values will be silently ignored by the store
   await store.updateAgent(agentId, updates as Parameters<typeof store.updateAgent>[1]);
+  await emitDataUpdated('global', userDid, 'agents');
   return { agentId, status: 'updated' };
 };
 
-const agentDelete: ActionHandler = async (payload, _userDid) => {
+const agentDelete: ActionHandler = async (payload, userDid) => {
   const agentId = requireField<string>(payload, 'agentId');
   const { getAgentStore } = await import('../agents/agent-store.js');
   const store = getAgentStore();
   await store.deleteAgent(agentId);
+  await emitDataUpdated('global', userDid, 'agents');
   return { agentId, status: 'deleted' };
 };
 
-const agentActivate: ActionHandler = async (payload, _userDid) => {
+const agentActivate: ActionHandler = async (payload, userDid) => {
   const agentId = requireField<string>(payload, 'agentId');
   const { getAgentRegistry } = await import('../agents/registry.js');
   const registry = getAgentRegistry();
@@ -130,14 +155,16 @@ const agentActivate: ActionHandler = async (payload, _userDid) => {
   if (!result.allowed) {
     throw new Error(`Activation blocked: ${result.reason}`);
   }
+  await emitDataUpdated('global', userDid, 'agents');
   return { agentId, status: 'activated' };
 };
 
-const agentDeactivate: ActionHandler = async (payload, _userDid) => {
+const agentDeactivate: ActionHandler = async (payload, userDid) => {
   const agentId = requireField<string>(payload, 'agentId');
   const { getAgentRegistry } = await import('../agents/registry.js');
   const registry = getAgentRegistry();
   registry.deactivateAgent(agentId);
+  await emitDataUpdated('global', userDid, 'agents');
   return { agentId, status: 'deactivated' };
 };
 
@@ -175,10 +202,11 @@ const toolCreate: ActionHandler = async (payload, userDid) => {
   };
 
   const tool = await registry.registerTool(input, userDid);
+  await emitDataUpdated('global', userDid, 'tools');
   return { toolId: tool.toolId, status: 'created' };
 };
 
-const toolUpdate: ActionHandler = async (payload, _userDid) => {
+const toolUpdate: ActionHandler = async (payload, userDid) => {
   const toolId = requireField<string>(payload, 'toolId');
   const updates = payload['updates'] as Record<string, unknown> | undefined;
   if (!updates || typeof updates !== 'object') {
@@ -193,10 +221,11 @@ const toolUpdate: ActionHandler = async (payload, _userDid) => {
   if (!updated) {
     throw new Error(`Tool ${toolId} not found`);
   }
+  await emitDataUpdated('global', userDid, 'tools');
   return { toolId, status: 'updated' };
 };
 
-const toolDelete: ActionHandler = async (payload, _userDid) => {
+const toolDelete: ActionHandler = async (payload, userDid) => {
   const toolId = requireField<string>(payload, 'toolId');
   const { getToolRegistry } = await import('../agents/tool-registry.js');
   const registry = getToolRegistry();
@@ -206,6 +235,7 @@ const toolDelete: ActionHandler = async (payload, _userDid) => {
   if (!deleted) {
     throw new Error(`Tool ${toolId} not found`);
   }
+  await emitDataUpdated('global', userDid, 'tools');
   return { toolId, status: 'deleted' };
 };
 
@@ -224,6 +254,7 @@ const toolAssignToAgent: ActionHandler = async (payload, userDid) => {
   }
 
   registry.assignToolToAgent(toolId, agentId, userDid);
+  await emitDataUpdated('global', userDid, 'tools');
   return { toolId, agentId, status: 'assigned' };
 };
 
@@ -264,10 +295,11 @@ const teamCreate: ActionHandler = async (payload, userDid) => {
   };
 
   const team = await registry.createTeam(input as Parameters<typeof registry.createTeam>[0], userDid);
+  await emitDataUpdated('global', userDid, 'teams');
   return { teamId: team.teamId, status: 'created' };
 };
 
-const teamUpdate: ActionHandler = async (payload, _userDid) => {
+const teamUpdate: ActionHandler = async (payload, userDid) => {
   const teamId = requireField<string>(payload, 'teamId');
   const updates = payload['updates'] as Record<string, unknown> | undefined;
   if (!updates || typeof updates !== 'object') {
@@ -282,10 +314,11 @@ const teamUpdate: ActionHandler = async (payload, _userDid) => {
   if (!updated) {
     throw new Error(`Team ${teamId} not found`);
   }
+  await emitDataUpdated('global', userDid, 'teams');
   return { teamId, status: 'updated' };
 };
 
-const teamDelete: ActionHandler = async (payload, _userDid) => {
+const teamDelete: ActionHandler = async (payload, userDid) => {
   const teamId = requireField<string>(payload, 'teamId');
   const { getTeamRegistry } = await import('../agents/team-registry.js');
   const registry = getTeamRegistry();
@@ -293,10 +326,11 @@ const teamDelete: ActionHandler = async (payload, _userDid) => {
   if (!deleted) {
     throw new Error(`Team ${teamId} not found`);
   }
+  await emitDataUpdated('global', userDid, 'teams');
   return { teamId, status: 'deleted' };
 };
 
-const teamAddMember: ActionHandler = async (payload, _userDid) => {
+const teamAddMember: ActionHandler = async (payload, userDid) => {
   const teamId = requireField<string>(payload, 'teamId');
   const agentId = requireField<string>(payload, 'agentId');
 
@@ -319,10 +353,11 @@ const teamAddMember: ActionHandler = async (payload, _userDid) => {
   };
 
   await registry.addMember(teamId, member);
+  await emitDataUpdated('global', userDid, 'teams');
   return { teamId, agentId, status: 'added' };
 };
 
-const teamRemoveMember: ActionHandler = async (payload, _userDid) => {
+const teamRemoveMember: ActionHandler = async (payload, userDid) => {
   const teamId = requireField<string>(payload, 'teamId');
   const agentId = requireField<string>(payload, 'agentId');
 
@@ -335,6 +370,7 @@ const teamRemoveMember: ActionHandler = async (payload, _userDid) => {
   }
 
   registry.removeMember(teamId, agentId);
+  await emitDataUpdated('global', userDid, 'teams');
   return { teamId, agentId, status: 'removed' };
 };
 
@@ -367,6 +403,7 @@ const skillCreate: ActionHandler = async (payload, userDid) => {
       },
       userDid,
     );
+    await emitDataUpdated('global', userDid, 'skills');
     return { skillId: result.skillId, filePath: result.filePath, status: 'created' };
   } catch (err) {
     // Fallback to DB-only registration if .md write fails
@@ -388,11 +425,12 @@ const skillCreate: ActionHandler = async (payload, userDid) => {
       },
       createdBy: userDid,
     });
+    await emitDataUpdated('global', userDid, 'skills');
     return { skillId: skill.skillId, status: 'created_db_only' };
   }
 };
 
-const skillUpdate: ActionHandler = async (payload, _userDid) => {
+const skillUpdate: ActionHandler = async (payload, userDid) => {
   const skillId = requireField<string>(payload, 'skillId');
   const updates = payload['updates'] as Record<string, unknown> | undefined;
   if (!updates || typeof updates !== 'object') {
@@ -411,10 +449,11 @@ const skillUpdate: ActionHandler = async (payload, _userDid) => {
 
   const registry = (getSkillRegistry as () => { updateSkill: (id: string, updates: Record<string, unknown>) => Promise<unknown> })();
   await registry.updateSkill(skillId, updates);
+  await emitDataUpdated('global', userDid, 'skills');
   return { skillId, status: 'updated' };
 };
 
-const skillDelete: ActionHandler = async (payload, _userDid) => {
+const skillDelete: ActionHandler = async (payload, userDid) => {
   const skillId = requireField<string>(payload, 'skillId');
 
   let getSkillRegistry: ((...args: unknown[]) => unknown) | undefined;
@@ -432,6 +471,7 @@ const skillDelete: ActionHandler = async (payload, _userDid) => {
   if (!deleted) {
     throw new Error(`Skill ${skillId} not found`);
   }
+  await emitDataUpdated('global', userDid, 'skills');
   return { skillId, status: 'deleted' };
 };
 
@@ -451,10 +491,11 @@ const skillAssign: ActionHandler = async (payload, userDid) => {
 
   const store = (getSkillStore as () => { assignSkillToAgent: (skillId: string, agentId: string, assignedBy: string) => Promise<{ skillId: string; agentId: string }> })();
   const result = await store.assignSkillToAgent(skillId, agentId, userDid);
+  await emitDataUpdated('global', userDid, 'skills');
   return { skillId: result.skillId, agentId: result.agentId, status: 'assigned' };
 };
 
-const skillUnassign: ActionHandler = async (payload, _userDid) => {
+const skillUnassign: ActionHandler = async (payload, userDid) => {
   const skillId = requireField<string>(payload, 'skillId');
   const agentId = requireField<string>(payload, 'agentId');
 
@@ -473,6 +514,7 @@ const skillUnassign: ActionHandler = async (payload, _userDid) => {
   if (!removed) {
     return { skillId, agentId, status: 'not_assigned' };
   }
+  await emitDataUpdated('global', userDid, 'skills');
   return { skillId, agentId, status: 'unassigned' };
 };
 
@@ -480,7 +522,7 @@ const skillUnassign: ActionHandler = async (payload, _userDid) => {
 // Design Interview Handlers
 // ---------------------------------------------------------------------------
 
-const designUpdateSection: ActionHandler = async (payload, _userDid) => {
+const designUpdateSection: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const section = requireField<string>(payload, 'section');
   const data = requireField<Record<string, unknown>>(payload, 'data');
@@ -488,22 +530,7 @@ const designUpdateSection: ActionHandler = async (payload, _userDid) => {
   const { designStore } = await import('../design/design-store.js');
   const result = await designStore.updateSection(problemSetId, section, data);
 
-  // Publish WebSocket event for real-time frontend updates
-  try {
-    const { getMessageBus } = await import('../messaging/message-bus.js');
-    const bus = getMessageBus();
-    await bus.publish({
-      sourceDid: 'system:ironclaw',
-      sourceType: 'system',
-      destinationType: 'channel',
-      destinationTarget: `ironclaw.${problemSetId}`,
-      messageType: 'design.section_updated',
-      payload: { section, data, source: 'interview' },
-    });
-  } catch (err) {
-    // Non-blocking: log but don't fail the action
-    console.warn('[builder-handlers] Failed to publish design.section_updated WS event:', err);
-  }
+  await emitDataUpdated(problemSetId, userDid, 'design', section);
 
   return { problemSetId, section, status: 'updated', design: result };
 };
@@ -539,7 +566,7 @@ async function mgrsToLatLng(mgrsStr: string): Promise<{ lat: number; lng: number
   }
 }
 
-const designMapAddSymbol: ActionHandler = async (payload, _userDid) => {
+const designMapAddSymbol: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const sidc = requireField<string>(payload, 'sidc');
 
@@ -592,10 +619,11 @@ const designMapAddSymbol: ActionHandler = async (payload, _userDid) => {
     console.warn('[builder-handlers] Failed to publish design.map_updated (add) WS event:', err);
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'design', 'map');
   return { success: true, symbolId: symbol.id };
 };
 
-const designMapMoveSymbol: ActionHandler = async (payload, _userDid) => {
+const designMapMoveSymbol: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const symbolId = requireField<string>(payload, 'symbol_id');
 
@@ -632,10 +660,11 @@ const designMapMoveSymbol: ActionHandler = async (payload, _userDid) => {
     console.warn('[builder-handlers] Failed to publish design.map_updated (move) WS event:', err);
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'design', 'map');
   return { success: true };
 };
 
-const designMapRemoveSymbol: ActionHandler = async (payload, _userDid) => {
+const designMapRemoveSymbol: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const symbolId = requireField<string>(payload, 'symbol_id');
 
@@ -657,10 +686,11 @@ const designMapRemoveSymbol: ActionHandler = async (payload, _userDid) => {
     console.warn('[builder-handlers] Failed to publish design.map_updated (remove) WS event:', err);
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'design', 'map');
   return { success: true };
 };
 
-const designMapUpdateSymbol: ActionHandler = async (payload, _userDid) => {
+const designMapUpdateSymbol: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const symbolId = requireField<string>(payload, 'symbol_id');
 
@@ -695,10 +725,11 @@ const designMapUpdateSymbol: ActionHandler = async (payload, _userDid) => {
     console.warn('[builder-handlers] Failed to publish design.map_updated (update) WS event:', err);
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'design', 'map');
   return { success: true };
 };
 
-const designMapAddControlMeasure: ActionHandler = async (payload, _userDid) => {
+const designMapAddControlMeasure: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const type = requireField<string>(payload, 'type');
   const label = requireField<string>(payload, 'label');
@@ -751,10 +782,11 @@ const designMapAddControlMeasure: ActionHandler = async (payload, _userDid) => {
     console.warn('[builder-handlers] Failed to publish design.map_updated (add_control_measure) WS event:', err);
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'design', 'map');
   return { success: true, measureId: measure.id };
 };
 
-const designMapAddOverlayGraphic: ActionHandler = async (payload, _userDid) => {
+const designMapAddOverlayGraphic: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const graphicType = requireField<string>(payload, 'graphic_type');
   const label = requireField<string>(payload, 'label');
@@ -800,6 +832,7 @@ const designMapAddOverlayGraphic: ActionHandler = async (payload, _userDid) => {
     console.warn('[builder-handlers] Failed to publish design.map_updated (add_overlay_graphic) WS event:', err);
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'design', 'map');
   return { success: true, measureId: measure.id };
 };
 
@@ -809,7 +842,7 @@ const designMapAddOverlayGraphic: ActionHandler = async (payload, _userDid) => {
 // Design Synthesis Handler
 // ---------------------------------------------------------------------------
 
-const designSynthesizeCurrentState: ActionHandler = async (payload) => {
+const designSynthesizeCurrentState: ActionHandler = async (payload, userDid) => {
   const problemSetId = payload.problem_set_id as string;
   if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
 
@@ -834,6 +867,8 @@ const designSynthesizeCurrentState: ActionHandler = async (payload) => {
   // Auto-save to design store
   const { designStore } = await import('../design/design-store.js');
   await designStore.updateSection(problemSetId, 'problem-framing', { currentState });
+
+  await emitDataUpdated(problemSetId, userDid, 'design', 'problem-framing');
 
   return {
     success: true,
@@ -1103,7 +1138,7 @@ const problemSetListChildren: ActionHandler = async (payload) => {
   return { success: true, result: children };
 };
 
-const problemSetUpdateField: ActionHandler = async (payload) => {
+const problemSetUpdateField: ActionHandler = async (payload, userDid) => {
   const { problemSetStore } = await import('../problem-set/problem-set-store.js');
   const id = (payload.id ?? payload.problem_set_id) as string;
   const field = payload.field as string;
@@ -1117,6 +1152,7 @@ const problemSetUpdateField: ActionHandler = async (payload) => {
     return { success: false, error: `Field "${field}" is not updatable. Allowed: ${allowedFields.join(', ')}` };
   }
   const updated = await problemSetStore.updateProblemSet(id, { [camelField]: value });
+  await emitDataUpdated(id, userDid, 'problem-set');
   return { success: true, result: updated };
 };
 
@@ -1131,10 +1167,11 @@ const problemSetCreateChild: ActionHandler = async (payload, userDid) => {
     { name, description: (payload.description as string) ?? null, echelon: echelon as 'strategic' | 'operational' | 'tactical', classification: ((payload.classification as string) ?? 'UNCLASSIFIED') as 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET', parentProblemSetId: parentId },
     userDid,
   );
+  await emitDataUpdated(parentId, userDid, 'problem-set');
   return { success: true, result: child };
 };
 
-const problemSetConfigureAgents: ActionHandler = async (payload) => {
+const problemSetConfigureAgents: ActionHandler = async (payload, userDid) => {
   const { agentConfigStore } = await import('./agent-config-store.js');
   const psId = (payload.id ?? payload.problem_set_id) as string;
   const agentConfig = payload.agent_config as Record<string, unknown>;
@@ -1146,6 +1183,7 @@ const problemSetConfigureAgents: ActionHandler = async (payload) => {
   if (!existing) return { success: false, error: `Agent config for DID "${did}" not found` };
 
   const updated = await agentConfigStore.upsert({ ...existing, ...agentConfig } as Parameters<typeof agentConfigStore.upsert>[0]);
+  await emitDataUpdated(psId, userDid, 'problem-set', 'agents');
   return { success: true, result: updated };
 };
 
@@ -1153,26 +1191,29 @@ const problemSetConfigureAgents: ActionHandler = async (payload) => {
 // Resource Handlers (BASTION_TOOLS + MCP resources domain)
 // ---------------------------------------------------------------------------
 
-const resourceCreate: ActionHandler = async (payload) => {
+const resourceCreate: ActionHandler = async (payload, userDid) => {
   const { resourceStore } = await import('../resources/resource-store.js');
   const name = payload.name as string;
   const category = (payload.type ?? payload.category) as string;
   const status = (payload.status as string) ?? 'available';
   if (!name || !category) return { success: false, error: 'name and type are required' };
 
+  const psId = (payload.problem_set_id ?? payload.mission_id ?? '') as string;
   const resource = await resourceStore.createResource(
-    (payload.problem_set_id ?? payload.mission_id ?? '') as string,
+    psId,
     name, category as Parameters<typeof resourceStore.createResource>[2], status as Parameters<typeof resourceStore.createResource>[3],
     (payload.capabilities as Record<string, unknown>) ?? {},
   );
+  await emitDataUpdated(psId || 'global', userDid, 'resources');
   return { success: true, result: resource };
 };
 
-const resourceDelete: ActionHandler = async (payload) => {
+const resourceDelete: ActionHandler = async (payload, userDid) => {
   const { resourceStore } = await import('../resources/resource-store.js');
   const id = payload.id as string;
   if (!id) return { success: false, error: 'id is required' };
   const deleted = await resourceStore.deleteResource(id);
+  await emitDataUpdated('global', userDid, 'resources');
   return { success: true, result: { deleted } };
 };
 
@@ -1209,7 +1250,7 @@ const resourcesSearchCapabilities: ActionHandler = async (payload) => {
 // Gate Handlers (BASTION_TOOLS)
 // ---------------------------------------------------------------------------
 
-const gateCreate: ActionHandler = async (payload) => {
+const gateCreate: ActionHandler = async (payload, userDid) => {
   const { gateService } = await import('../gates/gate-service.js');
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const gateType = (payload.gate_type ?? payload.gateType) as string;
@@ -1223,6 +1264,7 @@ const gateCreate: ActionHandler = async (payload) => {
     target_item_type: (payload.target_item_type as string) ?? 'unknown',
     tab: ((payload.tab as string) ?? 'design') as Parameters<typeof gateService.createGate>[0]['tab'],
   });
+  await emitDataUpdated(problemSetId, userDid, 'gates');
   return { success: true, result: gate };
 };
 
@@ -1251,7 +1293,7 @@ const codeCreatePR: ActionHandler = async (payload) => {
 // System Config Handler (BASTION_TOOLS)
 // ---------------------------------------------------------------------------
 
-const systemUpdateConfig: ActionHandler = async (payload) => {
+const systemUpdateConfig: ActionHandler = async (payload, userDid) => {
   const { getPlatformSettingsStore } = await import('../auth/platform-settings-store.js');
   const store = getPlatformSettingsStore();
   const key = payload.key as string;
@@ -1261,6 +1303,7 @@ const systemUpdateConfig: ActionHandler = async (payload) => {
   // Only expose safe config updates
   if (key === 'environment') {
     const config = await store.setEnvironment(value as Parameters<typeof store.setEnvironment>[0]);
+    await emitDataUpdated('global', userDid, 'system', 'config');
     return { success: true, result: config };
   }
   // Read-only fallback: return current config
@@ -1478,7 +1521,7 @@ const graphGetObjectiveHierarchy: ActionHandler = async (payload) => {
   return { success: true, result: hierarchy };
 };
 
-const graphAdoptObjective: ActionHandler = async (payload) => {
+const graphAdoptObjective: ActionHandler = async (payload, userDid) => {
   const { objectiveStore } = await import('../strategic/objectives/store.js');
   const sourceObjectiveId = (payload.source_objective_id ?? payload.sourceObjectiveId) as string;
   const targetWorkspaceId = (payload.target_workspace_id ?? payload.targetWorkspaceId) as string;
@@ -1487,10 +1530,11 @@ const graphAdoptObjective: ActionHandler = async (payload) => {
   }
 
   const objective = await objectiveStore.adoptObjective(sourceObjectiveId, targetWorkspaceId);
+  await emitDataUpdated(targetWorkspaceId, userDid, 'objectives');
   return { success: true, result: objective };
 };
 
-const graphAssessObjectives: ActionHandler = async (payload) => {
+const graphAssessObjectives: ActionHandler = async (payload, userDid) => {
   const { objectiveStore } = await import('../strategic/objectives/store.js');
   const { getPool } = await import('../lib/database.js');
   const pool = getPool();
@@ -1541,6 +1585,8 @@ const graphAssessObjectives: ActionHandler = async (payload) => {
       console.warn(`[graphAssessObjectives] Failed to adopt ${parentObj.id}:`, err);
     }
   }
+
+  await emitDataUpdated(problemSetId, userDid, 'objectives');
 
   return {
     success: true,
@@ -1636,7 +1682,7 @@ const intelGetGapFillerStatus: ActionHandler = async (payload) => {
   return { success: true, ...status };
 };
 
-const intelPrioritizeGap: ActionHandler = async (payload) => {
+const intelPrioritizeGap: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const gapNodeId = (payload.gap_node_id ?? payload.gapNodeId) as string;
   const reason = payload.reason as string;
@@ -1653,6 +1699,7 @@ const intelPrioritizeGap: ActionHandler = async (payload) => {
   try {
     const results = await gapFillerService.fillGapsForProblemSet(problemSetId);
     const filled = results.find((r) => r.gapId === gapNodeId);
+    await emitDataUpdated(problemSetId, userDid, 'intel', 'gaps');
     return {
       success: true,
       prioritized: true,
@@ -1671,6 +1718,7 @@ const intelPrioritizeGap: ActionHandler = async (payload) => {
         : 'Gap cooldown cleared; gap will be researched on next eligible cycle',
     };
   } catch (err) {
+    await emitDataUpdated(problemSetId, userDid, 'intel', 'gaps');
     return {
       success: true,
       prioritized: true,
@@ -1682,7 +1730,7 @@ const intelPrioritizeGap: ActionHandler = async (payload) => {
   }
 };
 
-const intelRequestTargetedResearch: ActionHandler = async (payload) => {
+const intelRequestTargetedResearch: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const query = payload.query as string;
   const context = payload.context as string;
@@ -1702,6 +1750,7 @@ const intelRequestTargetedResearch: ActionHandler = async (payload) => {
     );
 
     const jobId = `targeted-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await emitDataUpdated(problemSetId, userDid, 'intel', 'research');
     return {
       success: true,
       jobId,
@@ -1732,6 +1781,8 @@ const teamAssignTask: ActionHandler = async (payload, userDid) => {
   const orchestrator = getTaskOrchestrator();
 
   const task = await orchestrator.assignTaskToTeam(teamId, taskDescription, problemSetId, userDid);
+
+  await emitDataUpdated(problemSetId, userDid, 'teams');
 
   return {
     taskId: task.taskId,
@@ -1768,7 +1819,7 @@ const intelGetPIRs: ActionHandler = async (payload) => {
   };
 };
 
-const intelCreatePIRFromAssumption: ActionHandler = async (payload) => {
+const intelCreatePIRFromAssumption: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const assumptionText = (payload.assumption_text ?? payload.assumptionText) as string;
   if (!problemSetId || !assumptionText) {
@@ -1796,10 +1847,11 @@ const intelCreatePIRFromAssumption: ActionHandler = async (payload) => {
     createdBy: 'ironclaw',
   });
 
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'pir');
   return { success: true, pir };
 };
 
-const intelAnswerPIR: ActionHandler = async (payload) => {
+const intelAnswerPIR: ActionHandler = async (payload, userDid) => {
   const pirId = (payload.pir_id ?? payload.pirId) as string;
   const answer = payload.answer as string;
   if (!pirId || !answer) {
@@ -1816,22 +1868,25 @@ const intelAnswerPIR: ActionHandler = async (payload) => {
   });
 
   if (!pir) return { success: false, error: `PIR ${pirId} not found` };
+  await emitDataUpdated((pir as unknown as Record<string, unknown>).problemSetId as string ?? 'global', userDid, 'intel', 'pir');
   return { success: true, pir };
 };
 
-const intelDerivePIRsFromDesign: ActionHandler = async (payload) => {
+const intelDerivePIRsFromDesign: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
 
   const { pirToolHandlers } = await import('../graph/tools/intelligence-gap-tools.js');
-  return await pirToolHandlers.derive_pirs_from_design({ problemSetId });
+  const result = await pirToolHandlers.derive_pirs_from_design({ problemSetId });
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'pir');
+  return result;
 };
 
 // ---------------------------------------------------------------------------
 // PIR Alert Handlers
 // ---------------------------------------------------------------------------
 
-const intelCreatePIRAlert: ActionHandler = async (payload, _userDid) => {
+const intelCreatePIRAlert: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
 
@@ -1864,6 +1919,8 @@ const intelCreatePIRAlert: ActionHandler = async (payload, _userDid) => {
     linkedAssumptionIds: pir.linkedAssumptionIds,
     linkedObjectiveIds: pir.linkedObjectiveIds,
   });
+
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'pir');
 
   return {
     success: true,
@@ -1919,7 +1976,7 @@ const intelWebSearch: ActionHandler = async (payload, _userDid) => {
   return { success: true, results, count: results.length };
 };
 
-const intelCreateResearchEvent: ActionHandler = async (payload, _userDid) => {
+const intelCreateResearchEvent: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const title = payload.title as string;
   const content = payload.content as string;
@@ -1944,10 +2001,11 @@ const intelCreateResearchEvent: ActionHandler = async (payload, _userDid) => {
     metadata: { feedId: 'ironclaw-autonomous', createdBy: 'ironclaw' },
   });
 
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'osint');
   return { success: true, eventId: event.id, event };
 };
 
-const intelProcessOsintEvent: ActionHandler = async (payload, _userDid) => {
+const intelProcessOsintEvent: ActionHandler = async (payload, userDid) => {
   const eventId = (payload.event_id ?? payload.eventId) as string;
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   if (!eventId || !problemSetId) {
@@ -1977,6 +2035,7 @@ const intelProcessOsintEvent: ActionHandler = async (payload, _userDid) => {
   };
 
   const stats = await processOSINTEventThroughAgents(event, syntheticFeed);
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'osint');
   return { success: true, eventId, ...stats };
 };
 
@@ -2090,7 +2149,7 @@ const intelDraftSituationAssessment: ActionHandler = async (payload, _userDid) =
   };
 };
 
-const autonomousLogActivity: ActionHandler = async (payload, _userDid) => {
+const autonomousLogActivity: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const activityType = (payload.activity_type ?? payload.activityType) as string;
   const severity = payload.severity as string;
@@ -2122,10 +2181,11 @@ const autonomousLogActivity: ActionHandler = async (payload, _userDid) => {
     });
   } catch { /* notification is non-fatal */ }
 
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'activity');
   return { success: true, entryId: entry.id, entry };
 };
 
-const autonomousSendAlert: ActionHandler = async (payload, _userDid) => {
+const autonomousSendAlert: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const message = payload.message as string;
   const severity = payload.severity as string;
@@ -2179,6 +2239,7 @@ const autonomousSendAlert: ActionHandler = async (payload, _userDid) => {
     }
   }
 
+  await emitDataUpdated(problemSetId, userDid, 'intel', 'alert');
   return { success: true, severity, telegramSent };
 };
 
@@ -2235,7 +2296,7 @@ const brainEvaluateRelevance: ActionHandler = async (payload, _userDid) => {
   return { success: true, candidates, count: candidates.length };
 };
 
-const brainAugmentSlice: ActionHandler = async (payload, _userDid) => {
+const brainAugmentSlice: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const actorIds = payload.actor_ids as string[];
   const reason = payload.reason as string;
@@ -2279,10 +2340,11 @@ const brainAugmentSlice: ActionHandler = async (payload, _userDid) => {
     });
   } catch { /* logging is non-fatal */ }
 
+  await emitDataUpdated(problemSetId, userDid, 'brain');
   return { success: true, augmented, count: augmented.length, reason };
 };
 
-const brainPruneSlice: ActionHandler = async (payload, _userDid) => {
+const brainPruneSlice: ActionHandler = async (payload, userDid) => {
   const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
   const actorIds = payload.actor_ids as string[];
   const reason = payload.reason as string;
@@ -2322,6 +2384,7 @@ const brainPruneSlice: ActionHandler = async (payload, _userDid) => {
     });
   } catch { /* logging is non-fatal */ }
 
+  await emitDataUpdated(problemSetId, userDid, 'brain');
   return { success: true, pruned, count: pruned.length, reason };
 };
 

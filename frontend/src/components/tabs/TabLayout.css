@@ -123,6 +123,11 @@
   padding: clamp(0.75rem, 2vw, 1.5rem);  /* was fixed 1.5rem */
 }
 
+/* Full-height mode: children fill the panel instead of scrolling */
+.tab-content.tab-content--full-height {
+  overflow: hidden;
+}
+
 /* ============================================================================
    Placeholder style for views requiring mission context
    ============================================================================ */
