@@ -14,6 +14,10 @@ import { generateAgentAvatar } from '../../lib/agent-avatar.ts';
 interface IronclawMessageProps {
   message: IronclawChatMessage;
   onActionDecision?: (actionId: string, decision: TrustDecision) => void;
+  /** When true, renders plain text with blinking cursor (typewriter effect per D-05) */
+  isStreaming?: boolean;
+  /** When false, suppresses slide-in animation (e.g. for catch-up/history messages) */
+  animate?: boolean;
 }
 
 /** Format a date string as relative time (e.g., "2m ago") */
@@ -31,7 +35,7 @@ function relativeTime(dateStr: string): string {
   return `${diffDay}d ago`;
 }
 
-export function IronclawMessage({ message, onActionDecision }: IronclawMessageProps) {
+export function IronclawMessage({ message, onActionDecision, isStreaming = false, animate = true }: IronclawMessageProps) {
   const isUser = message.sender === 'user';
   const isSpecialist = message.sender === 'specialist';
 
@@ -52,7 +56,20 @@ export function IronclawMessage({ message, onActionDecision }: IronclawMessagePr
       : 'Ironclaw';
 
   return (
-    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-3`}>
+    <div
+      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-3`}
+      style={animate ? { animation: 'slideIn 150ms ease-out' } : undefined}
+    >
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateY(8px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes cursor-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
       {/* Sender label */}
       <div className={`flex items-center gap-1.5 mb-1 px-1 ${isUser ? 'flex-row-reverse' : ''}`}>
         {/* Avatar */}
@@ -76,44 +93,55 @@ export function IronclawMessage({ message, onActionDecision }: IronclawMessagePr
       {/* Message bubble */}
       <div className={`${alignment} ${maxWidth} ${bgColor} rounded-lg px-3 py-2`}>
         <div className="ironclaw-md text-sm break-words">
-          <Markdown
-            components={{
-              // Render inline code with styling
-              code: ({ children, className }) => {
-                const isBlock = className?.startsWith('language-');
-                return isBlock ? (
-                  <pre className="bg-black/30 rounded px-2 py-1.5 my-1.5 overflow-x-auto text-xs">
-                    <code className={className}>{children}</code>
-                  </pre>
-                ) : (
-                  <code className="bg-black/20 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
-                );
-              },
-              pre: ({ children }) => <>{children}</>,
-              p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
-              ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5">{children}</ol>,
-              li: ({ children }) => <li className="text-sm">{children}</li>,
-              h1: ({ children }) => <h1 className="text-base font-bold mb-1 mt-2">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-sm font-bold mb-1 mt-2">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-1.5">{children}</h3>,
-              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-              blockquote: ({ children }) => (
-                <blockquote className="border-l-2 border-slate-500 pl-2 my-1.5 text-slate-300 italic">
-                  {children}
-                </blockquote>
-              ),
-              table: ({ children }) => (
-                <div className="overflow-x-auto my-1.5">
-                  <table className="text-xs border-collapse w-full">{children}</table>
-                </div>
-              ),
-              th: ({ children }) => <th className="border border-slate-600 px-2 py-1 text-left bg-slate-800/50">{children}</th>,
-              td: ({ children }) => <td className="border border-slate-700 px-2 py-1">{children}</td>,
-            }}
-          >
-            {message.content ?? ''}
-          </Markdown>
+          {isStreaming ? (
+            // Streaming mode: plain text with blinking cursor (D-05)
+            <span>
+              {message.content ?? ''}
+              <span
+                className="inline-block w-[2px] h-[14px] bg-gray-400 ml-0.5 align-middle"
+                style={{ animation: 'cursor-blink 1s step-end infinite' }}
+              />
+            </span>
+          ) : (
+            <Markdown
+              components={{
+                // Render inline code with styling
+                code: ({ children, className }) => {
+                  const isBlock = className?.startsWith('language-');
+                  return isBlock ? (
+                    <pre className="bg-black/30 rounded px-2 py-1.5 my-1.5 overflow-x-auto text-xs">
+                      <code className={className}>{children}</code>
+                    </pre>
+                  ) : (
+                    <code className="bg-black/20 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+                  );
+                },
+                pre: ({ children }) => <>{children}</>,
+                p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5">{children}</ol>,
+                li: ({ children }) => <li className="text-sm">{children}</li>,
+                h1: ({ children }) => <h1 className="text-base font-bold mb-1 mt-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-sm font-bold mb-1 mt-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-1.5">{children}</h3>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-2 border-slate-500 pl-2 my-1.5 text-slate-300 italic">
+                    {children}
+                  </blockquote>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-1.5">
+                    <table className="text-xs border-collapse w-full">{children}</table>
+                  </div>
+                ),
+                th: ({ children }) => <th className="border border-slate-600 px-2 py-1 text-left bg-slate-800/50">{children}</th>,
+                td: ({ children }) => <td className="border border-slate-700 px-2 py-1">{children}</td>,
+              }}
+            >
+              {message.content ?? ''}
+            </Markdown>
+          )}
         </div>
 
         {/* Inline action card */}
