@@ -992,6 +992,18 @@ Plans:
 - [ ] 63-02-PLAN.md -- Migrate feed-poller and gap-filler callers, deprecate old extractor
 - [ ] 63-03-PLAN.md -- Source pre-registration and LLM concurrency tuning
 
+### Phase 67: Ironclaw SSE Streaming & Event-Driven Agent Communication
+
+**Goal:** Replace synchronous webhook chat with an event-driven SSE architecture. User messages are fire-and-forget POSTs; Ironclaw autonomously executes tools and streams back results via server-sent events. Event history is persisted server-side so reconnecting clients can catch up. Specialist agent delegation becomes visible as nested event streams.
+**Requirements**: SSE endpoint, event persistence table, event types (ack, tool_call, tool_result, delegation, progress, response, error), reconnection with last-event-id, frontend EventSource integration
+**Depends on:** Phase 66
+**Plans:** 3 plans
+
+Plans:
+- [ ] 67-01-PLAN.md -- Backend SSE foundation: event types, event store, SSE endpoint with Last-Event-ID replay
+- [ ] 67-02-PLAN.md -- Backend service wiring: replace publishToChannel with SSE event emission, simulated token streaming
+- [ ] 67-03-PLAN.md -- Frontend EventSource integration, SSE UI components (ToolCallCard, DelegationNotice, InlineError, SSEConnectionIndicator), typewriter streaming
+
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
 
@@ -2137,3 +2149,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 42. Resources Tab — Inventory, Discovery & Onboarding | 6/6 | Complete   | 2026-03-12 |
 | 50. Universal Intelligence Input & Auto-Classification | 7/7 | Complete | 2026-03-18 |
 | 66. Ironclaw Memory Evolution, Concept Learning & Reinforcement | 7/6 | Complete    | 2026-04-05 |
+| 67. Ironclaw SSE Streaming & Event-Driven Agent Communication | 0/TBD | Not started | - |
