@@ -14,6 +14,10 @@ export { IronclawStepStream } from './IronclawStepStream.tsx';
 export { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 export { IronclawMemoryPanel } from './IronclawMemoryPanel.tsx';
 export { IronclawActivityFeed } from './IronclawActivityFeed.tsx';
+export { ToolCallCard } from './ToolCallCard.tsx';
+export { DelegationNotice } from './DelegationNotice.tsx';
+export { InlineError } from './InlineError.tsx';
+export { SSEConnectionIndicator } from './SSEConnectionIndicator.tsx';
 
 // Types (re-exported from types module)
 export type {
@@ -30,4 +34,9 @@ export type {
   TrustPreference,
   IronclawMemoryEntry,
   AutonomousActivityEntry,
+  StreamingResponse,
+  ToolCallState,
+  DelegationState,
+  InlineErrorState,
+  SSEConnectionState,
 } from '../../types/ironclaw.ts';

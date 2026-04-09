@@ -10,6 +10,11 @@ import type {
   IronclawChatMessage,
   IronclawTaskData,
   TrustDecision,
+  SSEConnectionState,
+  StreamingResponse,
+  ToolCallState,
+  DelegationState,
+  InlineErrorState,
 } from '../../types/ironclaw.ts';
 import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
@@ -21,6 +26,10 @@ import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.t
 import { AgentConfigPanel } from '../agent-config/AgentConfigPanel.tsx';
 import { IronclawConceptsPanel } from './IronclawConceptsPanel.tsx';
 import { IronclawDirectivesPanel } from './IronclawDirectivesPanel.tsx';
+import { ToolCallCard } from './ToolCallCard.tsx';
+import { DelegationNotice } from './DelegationNotice.tsx';
+import { InlineError } from './InlineError.tsx';
+import { SSEConnectionIndicator } from './SSEConnectionIndicator.tsx';
 import './IronclawDrawer.css';
 
 // Hardcoded initial specialist list
@@ -76,6 +85,20 @@ interface IronclawDrawerProps {
   onDeleteThread?: (threadId: string) => Promise<void>;
   /** Active problem set ID — required for autonomous activity feed */
   problemSetId?: string | null;
+  /** SSE connection state for status indicator */
+  sseState?: SSEConnectionState;
+  /** Currently streaming response (typewriter effect) */
+  streamingResponse?: StreamingResponse | null;
+  /** Active tool calls to render as cards */
+  toolCalls?: ToolCallState[];
+  /** Delegation notices to render */
+  delegations?: DelegationState[];
+  /** Inline errors to render */
+  inlineErrors?: InlineErrorState[];
+  /** Setter for tool call expanded state */
+  setToolCalls?: React.Dispatch<React.SetStateAction<ToolCallState[]>>;
+  /** Setter for inline error retrying state */
+  setInlineErrors?: React.Dispatch<React.SetStateAction<InlineErrorState[]>>;
 }
 
 export function IronclawDrawer({
@@ -105,6 +128,13 @@ export function IronclawDrawer({
   onCreateThread,
   onDeleteThread,
   problemSetId,
+  sseState,
+  streamingResponse,
+  toolCalls,
+  delegations,
+  inlineErrors,
+  setToolCalls,
+  setInlineErrors,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -296,10 +326,7 @@ export function IronclawDrawer({
               <p className="text-[10px] text-gray-400">Chief of Staff</p>
             </div>
             {/* Connection status */}
-            <span
-              className={`w-2 h-2 rounded-full ml-1 ${isConnected ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}
-              title={isConnected ? 'Connected' : 'Connecting...'}
-            />
+            <SSEConnectionIndicator state={sseState ?? (isConnected ? 'open' : 'connecting')} />
           </div>
 
           {/* Close button */}
@@ -651,6 +678,61 @@ export function IronclawDrawer({
               />
             );
           })}
+
+          {/* Active tool calls -- progressive reveal (D-03, D-04) */}
+          {toolCalls && toolCalls.length > 0 && toolCalls.map((tc, idx) => (
+            <ToolCallCard
+              key={`tc-${idx}-${tc.toolName}`}
+              toolCall={tc}
+              onToggleExpand={() => {
+                setToolCalls?.((prev) =>
+                  prev.map((t, i) => i === idx ? { ...t, expanded: !t.expanded } : t)
+                );
+              }}
+            />
+          ))}
+
+          {/* Delegation notices -- specialist name + link to agent panel (D-09, D-10) */}
+          {delegations && delegations.length > 0 && delegations.map((d, idx) => (
+            <DelegationNotice
+              key={`deleg-${idx}-${d.specialistId}`}
+              delegation={d}
+              onViewInAgentPanel={(specialistId) => {
+                console.log('[IronclawDrawer] View specialist in agent panel:', specialistId);
+              }}
+            />
+          ))}
+
+          {/* Inline errors with retry (D-06) */}
+          {inlineErrors && inlineErrors.length > 0 && inlineErrors.map((err, idx) => (
+            <InlineError
+              key={`err-${idx}-${err.originalMessageId ?? idx}`}
+              error={err}
+              onRetry={(originalMessageId) => {
+                setInlineErrors?.((prev) =>
+                  prev.map((e, i) => i === idx ? { ...e, retrying: true } : e)
+                );
+                console.log('[IronclawDrawer] Retry message:', originalMessageId);
+              }}
+            />
+          ))}
+
+          {/* Streaming response -- typewriter effect (D-05) */}
+          {streamingResponse && streamingResponse.isStreaming && (
+            <IronclawMessage
+              key="streaming-response"
+              message={{
+                id: 'streaming-live',
+                problemSetId: '',
+                content: streamingResponse.content,
+                sender: 'ironclaw',
+                createdAt: new Date().toISOString(),
+              }}
+              onActionDecision={() => {}}
+              isStreaming={true}
+              animate={false}
+            />
+          )}
 
           {isLoading && <ThinkingIndicator />}
 
