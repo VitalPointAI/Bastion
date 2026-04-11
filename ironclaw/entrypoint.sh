@@ -165,6 +165,9 @@ session_idle_timeout_secs = 604800
 max_tool_iterations = 50
 auto_approve_tools = false
 
+[routines]
+max_lightweight_tokens = 8192
+
 [wasm]
 enabled = true
 default_memory_limit = 10485760

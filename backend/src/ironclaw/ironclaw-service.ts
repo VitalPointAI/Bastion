@@ -475,15 +475,41 @@ export class IronclawService {
     let actionCard: ActionCardData | null = null;
     if (parsed?.tool_call) {
       const toolCall = parsed.tool_call as Record<string, unknown>;
-      const actionType = (toolCall.action_type as string) ?? '';
+      let actionType = (toolCall.action_type as string) ?? '';
       const toolPayload = (toolCall.payload ?? toolCall.args ?? toolCall) as Record<string, unknown>;
+
+      // Resolve consolidated tool names to original handler names
+      const { CONSOLIDATED_DISPATCH } = await import('../mcp/consolidated-tools.js');
+      const dispatch = CONSOLIDATED_DISPATCH[actionType];
+      if (dispatch) {
+        const action = (toolPayload.action as string) ?? '';
+        const resolved = dispatch[action];
+        if (resolved) {
+          console.log(`[ironclaw] Resolved consolidated tool: ${actionType}.${action} → ${resolved}`);
+          actionType = resolved;
+        }
+      }
+
       const riskLevel = actionRegistry.getRiskLevel(actionType);
 
-      // ── Auto-execute low-risk read-only tools ────────────────────────
-      // Graph queries and design synthesis are read-only operations that
-      // should execute immediately when the commander directs action.
-      // No approval card needed — just do it and send the result back.
-      if ((riskLevel === 'low' && actionType.startsWith('bastion_graph_')) || actionType === 'bastion_design_synthesize_current_state') {
+      // ── Auto-execute tools the commander directed ────────────────────
+      // The commander's request IS the authorization. Auto-execute graph
+      // queries, design operations, intel tools, and brain curation.
+      // High-risk admin tools still show an approval card.
+      const autoExec = riskLevel !== 'high' && (
+        actionType.startsWith('bastion_graph_') ||
+        actionType.startsWith('bastion_design_') ||
+        actionType.startsWith('bastion_intel_') ||
+        actionType.startsWith('bastion_brain_') ||
+        actionType.startsWith('bastion_autonomous_') ||
+        // Consolidated tool names
+        actionType === 'bastion_design' ||
+        actionType === 'bastion_graph' ||
+        actionType === 'bastion_intel' ||
+        actionType === 'bastion_brain' ||
+        actionType === 'bastion_ops'
+      );
+      if (autoExec) {
         const { executeApprovedAction } = await import('./builder-handlers.js');
         console.log(`[ironclaw] Auto-executing low-risk tool: ${actionType}`);
         const execResult = await executeApprovedAction(actionType, toolPayload, 'ironclaw');

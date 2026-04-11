@@ -210,10 +210,10 @@ export function createMcpServer(): Server {
     },
   );
 
-  // Handler: list all registered tools
+  // Handler: list consolidated tools
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
-      tools: ALL_TOOLS.map((tool) => ({
+      tools: CONSOLIDATED_TOOLS.map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
