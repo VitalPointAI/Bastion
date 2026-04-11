@@ -103,7 +103,8 @@ function getTabGuidance(tab: string, problemSetId?: string): string {
    Structure the data field as nested: { friendly: { cog_statement: "...",
    critical_capabilities: [{ label, description, critical_requirements: [{ label, description,
    critical_vulnerabilities: [{ label, description }] }] }] } }
-3. After writing, confirm briefly and ask about refinements. The canvas updates in real-time.
+3. EVERY node (CC, CR, CV) MUST have both a short label (3-6 words) AND a description (1-2 sentences explaining the significance). Never send nodes as plain strings — always {label, description} objects.
+4. After writing, confirm briefly and ask about refinements. The canvas updates in real-time.
 problem_set_id: ${problemSetId ?? 'unknown'}]`;
     case 'plan':
       return '[TAB GUIDANCE: The commander is on the Plan tab. Focus on campaign planning, COA development, phasing, and mission orders.]';
