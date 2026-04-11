@@ -12,7 +12,6 @@
 import { ironclawClient, didToSlug } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
-import { getMessageBus } from '../messaging/message-bus.js';
 import { getAgentStore } from '../agents/agent-store.js';
 import { getTeamStore } from '../agents/team-store.js';
 import { getActivityLogger } from '../agents/activity-logger.js';
@@ -59,7 +58,6 @@ export interface MessageContext {
   userRole?: string;
 }
 
-const SERVICE_DID = 'did:system:ironclaw-service';
 
 // ---------------------------------------------------------------------------
 // Global (non-problem-set) scope helpers
@@ -83,43 +81,6 @@ function globalChannelId(userDid: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// WebSocket channel helper
-// ---------------------------------------------------------------------------
-
-/** Strict pattern for channel names — prevents path traversal and injection. */
-const CHANNEL_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
-
-function wsChannel(problemSetId: string): string {
-  if (!CHANNEL_NAME_PATTERN.test(problemSetId)) {
-    throw new Error(
-      `[ironclaw] Invalid problemSetId for channel name: "${problemSetId}". ` +
-      'Must match [a-zA-Z0-9_-]+.',
-    );
-  }
-  return `ironclaw.${problemSetId}`;
-}
-
-async function publishToChannel(
-  problemSetId: string,
-  messageType: string,
-  payload: unknown,
-): Promise<void> {
-  try {
-    const bus = getMessageBus();
-    await bus.publish({
-      sourceDid: SERVICE_DID,
-      sourceType: 'system',
-      destinationType: 'channel',
-      destinationTarget: wsChannel(problemSetId),
-      messageType,
-      payload,
-    });
-  } catch (err) {
-    // Non-blocking: log but don't fail the message flow
-    console.error(`[ironclaw] WebSocket publish error (${messageType}):`, err);
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Tab-specific behavioral guidance
 // ---------------------------------------------------------------------------
