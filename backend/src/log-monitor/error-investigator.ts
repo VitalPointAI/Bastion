@@ -139,8 +139,8 @@ function extractFilesFromStackTrace(stackLines: string[]): string[] {
 export class ErrorInvestigator {
   private client: Anthropic;
 
-  constructor(anthropicApiKey: string) {
-    this.client = new Anthropic({ apiKey: anthropicApiKey });
+  constructor(client: Anthropic) {
+    this.client = client;
   }
 
   /**

@@ -76,16 +76,10 @@ export class LogMonitorService {
       process.exit(1);
     }
 
-    // 2. Validate Anthropic API key
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) {
-      console.error(
-        '[LogMonitor] ERROR: ANTHROPIC_API_KEY is not set. ' +
-          'The log monitor requires Claude to investigate errors.',
-      );
-      process.exit(1);
-    }
-    this.errorInvestigator = new ErrorInvestigator(anthropicKey);
+    // 2. Create Anthropic client via OAuth token chain
+    const { createAnthropicClient } = await import('../agents/langgraph/llm-factory.js');
+    const anthropicClient = await createAnthropicClient();
+    this.errorInvestigator = new ErrorInvestigator(anthropicClient);
 
     // 3. Check GitHub token — degrade to dry-run if missing
     const { githubService } = await import('../ironclaw/github-service.js');

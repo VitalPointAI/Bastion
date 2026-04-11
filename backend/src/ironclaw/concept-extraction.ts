@@ -14,7 +14,6 @@
  * - No rate limiting (per D-05)
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { conceptStore, generateConceptEmbedding } from './concept-store.js';
 import type { ConceptDraft } from './concept-types.js';
 import { getPool } from '../lib/database.js';
@@ -95,7 +94,8 @@ async function extractFromThread(
     }
 
     // LLM extraction pass
-    const anthropic = new Anthropic();
+    const { createAnthropicClient } = await import('../agents/langgraph/llm-factory.js');
+    const anthropic = await createAnthropicClient();
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,

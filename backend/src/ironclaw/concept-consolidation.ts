@@ -35,9 +35,10 @@ const STARTUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 let anthropicClient: Anthropic | null = null;
 
-function getAnthropicClient(): Anthropic {
+async function getAnthropicClient(): Promise<Anthropic> {
   if (!anthropicClient) {
-    anthropicClient = new Anthropic();
+    const { createAnthropicClient } = await import('../agents/langgraph/llm-factory.js');
+    anthropicClient = await createAnthropicClient();
   }
   return anthropicClient;
 }
@@ -79,8 +80,8 @@ Return JSON only (no markdown):
  * Returns summary counts for logging.
  */
 export async function runConsolidation(): Promise<void> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn('[ironclaw] consolidation: ANTHROPIC_API_KEY not set — skipping');
+  if (!process.env.ANTHROPIC_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
+    console.warn('[ironclaw] consolidation: no Anthropic credentials — skipping');
     return;
   }
 
@@ -127,7 +128,7 @@ export async function runConsolidation(): Promise<void> {
       const latestVersion = activeVersions[activeVersions.length - 1];
 
       // Build and send LLM merge prompt
-      const client = getAnthropicClient();
+      const client = await getAnthropicClient();
       const response = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 512,

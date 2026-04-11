@@ -301,3 +301,19 @@ export function getLLMCacheStats(): { size: number; keys: string[] } {
     keys: Array.from(llmCache.keys()),
   };
 }
+
+/**
+ * Create a raw Anthropic SDK client using the same OAuth token resolution
+ * chain as createLLMForAgent. Use this for direct SDK calls (concept
+ * extraction, consolidation) that don't go through LangChain.
+ */
+export async function createAnthropicClient(): Promise<Anthropic> {
+  const config = await resolveLLMConfig('default');
+  if (config.isOAuthToken) {
+    return new Anthropic({
+      authToken: config.apiKey,
+      defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' },
+    });
+  }
+  return new Anthropic({ apiKey: config.apiKey });
+}
