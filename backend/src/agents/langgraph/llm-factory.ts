@@ -106,22 +106,36 @@ export async function resolveLLMConfig(
   if (provider === 'anthropic') {
     let oauthToken: string | null = null;
 
-    // 1. Claude Code credential file (~/.claude/.credentials.json)
-    //    Same source Ironclaw reads — always has the freshest token
+    // 1. Shared token file (written by backend OAuth refresh service)
+    //    This is the production source of truth — refreshed every 60s.
     try {
       const { readFileSync } = await import('fs');
-      const { homedir } = await import('os');
-      const credPath = `${homedir()}/.claude/.credentials.json`;
-      const creds = JSON.parse(readFileSync(credPath, 'utf-8'));
-      const fileToken = creds?.claudeAiOauth?.accessToken;
+      const tokenFile = '/shared/tokens/anthropic-oauth-token';
+      const fileToken = readFileSync(tokenFile, 'utf-8').trim();
       if (fileToken?.startsWith('sk-ant-oat')) {
         oauthToken = fileToken;
       }
     } catch {
-      // Credential file not available
+      // Token file not available (local dev)
     }
 
-    // 2. ANTHROPIC_OAUTH_TOKEN env var
+    // 2. Claude Code credential file (~/.claude/.credentials.json)
+    if (!oauthToken) {
+      try {
+        const { readFileSync } = await import('fs');
+        const { homedir } = await import('os');
+        const credPath = `${homedir()}/.claude/.credentials.json`;
+        const creds = JSON.parse(readFileSync(credPath, 'utf-8'));
+        const fileToken = creds?.claudeAiOauth?.accessToken;
+        if (fileToken?.startsWith('sk-ant-oat')) {
+          oauthToken = fileToken;
+        }
+      } catch {
+        // Credential file not available
+      }
+    }
+
+    // 3. ANTHROPIC_OAUTH_TOKEN env var
     if (!oauthToken) {
       const envToken = process.env.ANTHROPIC_OAUTH_TOKEN;
       if (envToken?.startsWith('sk-ant-oat')) {
@@ -129,7 +143,7 @@ export async function resolveLLMConfig(
       }
     }
 
-    // 3. Config store OAuth
+    // 4. Config store OAuth
     if (!oauthToken && globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
       const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
       const configToken = await getValidOAuthToken();
