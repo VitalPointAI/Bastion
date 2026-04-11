@@ -38,7 +38,8 @@ function generateId(): string {
 
 function countCoGNodes(node: CoGNode | null): number {
   if (!node) return 0;
-  return 1 + (node.children ?? []).reduce((sum, c) => sum + countCoGNodes(c), 0);
+  const children = Array.isArray(node.children) ? node.children : [];
+  return 1 + children.reduce((sum, c) => sum + countCoGNodes(c), 0);
 }
 
 function countCVLinks(loes: OperationalDesign['linesOfEffort']): number {
