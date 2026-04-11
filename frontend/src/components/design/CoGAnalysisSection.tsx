@@ -127,10 +127,10 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
 
   // Sync if initialData changes externally
   useEffect(() => {
-    setCogAnalysis({
-      friendly: normalizeCoGTree(initialData?.friendly),
-      adversary: normalizeCoGTree(initialData?.adversary),
-    });
+    const friendly = normalizeCoGTree(initialData?.friendly);
+    const adversary = normalizeCoGTree(initialData?.adversary);
+    console.log('[CoGAnalysisSection] initialData changed — friendly root:', friendly.root?.label?.slice(0, 50) ?? 'null', '| adversary root:', adversary.root?.label?.slice(0, 50) ?? 'null');
+    setCogAnalysis({ friendly, adversary });
   }, [initialData]);
 
   const scheduleAutoSave = useCallback(
