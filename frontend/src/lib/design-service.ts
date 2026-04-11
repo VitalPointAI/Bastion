@@ -161,7 +161,10 @@ export const designService = {
   async getDesign(problemSetId: string): Promise<OperationalDesign> {
     const res = await fetch(`${API_BASE}/api/design/${problemSetId}`);
     if (!res.ok) throw new Error(`Failed to get design: ${res.statusText}`);
-    return res.json();
+    const data = await res.json();
+    // Guard against Ironclaw writing non-array data to array fields
+    if (!Array.isArray(data.linesOfEffort)) data.linesOfEffort = [];
+    return data;
   },
 
   /**

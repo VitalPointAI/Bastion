@@ -106,8 +106,8 @@ function getLinesOfEffortSummary(designData: OperationalDesign): string | null {
   const loes = designData.linesOfEffort;
   if (!loes || loes.length === 0) return null;
 
-  const totalDPs = loes.reduce(
-    (sum, loe) => sum + (loe.decisivePoints?.length ?? 0),
+  const totalDPs = (Array.isArray(loes) ? loes : []).reduce(
+    (sum, loe) => sum + (Array.isArray(loe.decisivePoints) ? loe.decisivePoints.length : 0),
     0
   );
   let cvLinked = 0;
