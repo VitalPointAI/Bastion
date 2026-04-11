@@ -31,12 +31,6 @@ interface UpdateResult {
   error?: string;
 }
 
-interface UpdateStatus {
-  currentVersion: string | null;
-  isUpdating: boolean;
-  lastChecked: Date | null;
-}
-
 /** Returned by triggerUpdate — simpler than the internal UpdateResult */
 export interface TriggerUpdateResult {
   success: boolean;
@@ -306,7 +300,7 @@ export class SelfUpdateService {
     try {
       healthy = await ironclawClient.healthCheck();
     } catch {
-      healthy = false;
+      // Already false
     }
 
     return {

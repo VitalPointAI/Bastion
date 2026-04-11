@@ -6,7 +6,7 @@
 
 FROM debian:bookworm-slim
 
-ARG IRONCLAW_VERSION=0.24.0
+ARG IRONCLAW_VERSION=0.25.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 curl socat \

@@ -32,33 +32,39 @@ load_token
 UPDATE_BIN="/shared/tokens/ironclaw-update"
 UPDATE_VER="/shared/tokens/ironclaw-update-version"
 
-IRONCLAW_BIN="/home/ironclaw/bin/ironclaw"
+# Persistent binary path — on the Docker volume so it survives container recreation
+IRONCLAW_BIN="/home/ironclaw/.ironclaw/bin/ironclaw"
 
 if [ -f "$UPDATE_BIN" ]; then
   echo "[entrypoint] Found updated binary at ${UPDATE_BIN}"
-  mkdir -p /home/ironclaw/bin
+  mkdir -p /home/ironclaw/.ironclaw/bin
   cp "$UPDATE_BIN" "$IRONCLAW_BIN"
   chmod +x "$IRONCLAW_BIN"
   rm -f "$UPDATE_BIN"
 
   # Update version tracking
   if [ -f "$UPDATE_VER" ]; then
-    cp "$UPDATE_VER" /tmp/ironclaw-version
+    cp "$UPDATE_VER" /home/ironclaw/.ironclaw/bin/version
     rm -f "$UPDATE_VER"
   fi
 
   echo "[entrypoint] Binary updated — will use ${IRONCLAW_BIN}"
-elif [ ! -f "$IRONCLAW_BIN" ]; then
-  # First run — no update staged, use system binary
+elif [ -f "$IRONCLAW_BIN" ]; then
+  # Previously updated binary exists on persistent volume — use it
+  echo "[entrypoint] Using persistent binary at ${IRONCLAW_BIN}"
+else
+  # No update staged and no persistent binary — use system binary from image
   IRONCLAW_BIN="ironclaw"
 fi
 
-# Export version from build-time extraction and share with backend
-if [ -f /tmp/ironclaw-version ]; then
+# Export version: persistent volume version takes priority over build-time
+if [ -f /home/ironclaw/.ironclaw/bin/version ]; then
+  export IRONCLAW_VERSION="$(cat /home/ironclaw/.ironclaw/bin/version)"
+elif [ -f /tmp/ironclaw-version ]; then
   export IRONCLAW_VERSION="$(cat /tmp/ironclaw-version)"
-  # Write to shared volume so backend can read it
-  echo "$IRONCLAW_VERSION" > /shared/tokens/ironclaw-version 2>/dev/null || true
 fi
+# Share with backend via shared volume
+echo "${IRONCLAW_VERSION:-unknown}" > /shared/tokens/ironclaw-version 2>/dev/null || true
 
 echo "[entrypoint] Starting Ironclaw v${IRONCLAW_VERSION:-unknown} (token source: ${TOKEN_FILE})"
 
