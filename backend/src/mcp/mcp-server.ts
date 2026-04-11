@@ -30,6 +30,7 @@ import { calendarTools } from './tools/calendar.js';
 import { resourcesTools } from './tools/resources.js';
 import { personnelTools, PERSONNEL_TOOL_CLEARANCES } from './tools/personnel.js';
 import { intelligenceTools } from './tools/intelligence.js';
+import { CONSOLIDATED_TOOLS, CONSOLIDATED_DISPATCH } from './consolidated-tools.js';
 import { resolveDIDClaims, requireClearance } from './middleware/did-auth.js';
 
 // ---------------------------------------------------------------------------
@@ -37,10 +38,10 @@ import { resolveDIDClaims, requireClearance } from './middleware/did-auth.js';
 // ---------------------------------------------------------------------------
 
 /**
- * Complete tool catalog: legacy BASTION_TOOLS plus domain-specific tool groups
- * added in Phase 60 Plan 02.
+ * Full tool catalog — used for handler lookup when dispatching consolidated
+ * tool calls back to their original handlers.
  */
-const ALL_TOOLS: MCPToolDefinition[] = [
+const ALL_TOOLS_FULL: MCPToolDefinition[] = [
   ...BASTION_TOOLS,
   ...knowledgeTools,
   ...operationsTools,
@@ -49,6 +50,12 @@ const ALL_TOOLS: MCPToolDefinition[] = [
   ...personnelTools,
   ...intelligenceTools,
 ];
+
+/**
+ * MCP-exposed tool catalog — consolidated category routers.
+ * Reduces 80+ tools to ~7 so Haiku's tool-selection step doesn't truncate.
+ */
+const ALL_TOOLS: MCPToolDefinition[] = CONSOLIDATED_TOOLS;
 
 // ---------------------------------------------------------------------------
 // DID Authorization
@@ -113,7 +120,16 @@ async function isToolAccessAuthorized(
 
   // Per blueprint: per-tool VC claim gating for personnel tools.
   // Resolve DID claims and check minimum clearance level.
-  const requiredClearance = PERSONNEL_TOOL_CLEARANCES[tool.name];
+  // For consolidated tools, check the resolved handler name
+  const resolvedToolName = (() => {
+    const dispatch = CONSOLIDATED_DISPATCH[tool.name];
+    if (!dispatch) return tool.name;
+    // Can't resolve action here — personnel clearance check is conservative:
+    // if any action in this category requires clearance, gate the whole category.
+    return tool.name;
+  })();
+  const requiredClearance = PERSONNEL_TOOL_CLEARANCES[resolvedToolName] ??
+    PERSONNEL_TOOL_CLEARANCES[tool.name];
   if (requiredClearance) {
     const claims = await resolveDIDClaims(agentDID);
     const hasClearance = requireClearance(claims, requiredClearance);
@@ -149,13 +165,27 @@ async function executeTool(
   args: Record<string, unknown>,
   agentDID: string,
 ): Promise<unknown> {
-  console.log(`[mcp-server] Tool call: ${toolName}`, {
+  // Resolve consolidated category tools → original handler name
+  let resolvedName = toolName;
+  const dispatch = CONSOLIDATED_DISPATCH[toolName];
+  if (dispatch) {
+    const action = args.action as string | undefined;
+    if (!action || !dispatch[action]) {
+      throw new Error(
+        `Invalid action "${action}" for ${toolName}. Valid: ${Object.keys(dispatch).join(', ')}`,
+      );
+    }
+    resolvedName = dispatch[action];
+    console.log(`[mcp-server] Consolidated dispatch: ${toolName}.${action} → ${resolvedName}`);
+  }
+
+  console.log(`[mcp-server] Tool call: ${resolvedName}`, {
     agentDID,
-    args: JSON.stringify(args),
+    args: JSON.stringify(args).slice(0, 1000),
   });
 
   const problemSetId = (args.problem_set_id ?? args.id ?? args.parent_id ?? '') as string;
-  const result = await toolBridge.handleToolCall(toolName, args, agentDID, problemSetId);
+  const result = await toolBridge.handleToolCall(resolvedName, args, agentDID, problemSetId);
   return result;
 }
 
@@ -254,8 +284,7 @@ export function createMcpServer(): Server {
   });
 
   console.log(
-    `[mcp-server] Registered ${ALL_TOOLS.length} tools total` +
-    ` (${BASTION_TOOLS.length} legacy BASTION_TOOLS + ${ALL_TOOLS.length - BASTION_TOOLS.length} domain tools)`,
+    `[mcp-server] Registered ${ALL_TOOLS.length} consolidated tools (routing to ${ALL_TOOLS_FULL.length} handlers)`,
   );
   return server;
 }
