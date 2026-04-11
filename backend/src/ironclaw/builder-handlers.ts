@@ -670,8 +670,8 @@ function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unk
   function buildFromFlatFields(side: Record<string, unknown>, cogLabel: string): Record<string, unknown> {
     const cogDescription = (side.description as string) ?? (side.cog_description as string) ?? '';
 
-    // Collect CC, CR, CV arrays
-    const ccArray = (side.critical_components as unknown[]) ?? (side.criticalComponents as unknown[]) ?? (side.cc as unknown[]) ?? [];
+    // Collect CC, CR, CV arrays — LLM uses both "capabilities" and "components"
+    const ccArray = (side.critical_capabilities as unknown[]) ?? (side.criticalCapabilities as unknown[]) ?? (side.critical_components as unknown[]) ?? (side.criticalComponents as unknown[]) ?? (side.cc as unknown[]) ?? [];
     const crArray = (side.critical_requirements as unknown[]) ?? (side.criticalRequirements as unknown[]) ?? (side.cr as unknown[]) ?? [];
     const cvArray = (side.critical_vulnerabilities as unknown[]) ?? (side.criticalVulnerabilities as unknown[]) ?? (side.cv as unknown[]) ?? [];
 

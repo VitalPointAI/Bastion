@@ -72,7 +72,7 @@ function normalizeCoGTree(tree: unknown): CoGTreeType {
   const cogLabel = (t.cog_statement as string) ?? (t.cogStatement as string) ??
     (t.label as string) ?? (t.name as string) ?? (t.statement as string);
   if (cogLabel) {
-    const ccArr = (t.critical_components as unknown[]) ?? (t.criticalComponents as unknown[]) ?? [];
+    const ccArr = (t.critical_capabilities as unknown[]) ?? (t.criticalCapabilities as unknown[]) ?? (t.critical_components as unknown[]) ?? (t.criticalComponents as unknown[]) ?? [];
     const crArr = (t.critical_requirements as unknown[]) ?? (t.criticalRequirements as unknown[]) ?? [];
     const cvArr = (t.critical_vulnerabilities as unknown[]) ?? (t.criticalVulnerabilities as unknown[]) ?? [];
 
