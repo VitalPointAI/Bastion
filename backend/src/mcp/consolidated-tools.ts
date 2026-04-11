@@ -1,27 +1,22 @@
 /**
  * Consolidated MCP Tool Definitions
  *
- * Reduces 80+ individual tools to ~8 category routers so Haiku's
- * tool-selection step doesn't exceed its output token limit.
+ * Exposes a SINGLE `bastion` MCP tool to minimize Ironclaw's select_tools
+ * token usage. The tool takes `category` + `action` parameters that route
+ * internally to the original handler via CONSOLIDATED_DISPATCH.
  *
- * Each category tool takes an `action` enum to route internally.
- * The MCP server dispatches (category, action) → original handler
- * via CONSOLIDATED_DISPATCH.
+ * This means Ironclaw adds only 1 BASTION tool to its tool selection step,
+ * keeping total tools manageable for Haiku.
  */
 
 import type { MCPToolDefinition } from '../ironclaw/tool-bridge.js';
 
 // ---------------------------------------------------------------------------
-// Tab-based Tool Filtering
-// ---------------------------------------------------------------------------
-
-
-// ---------------------------------------------------------------------------
-// Dispatch Map: (categoryTool, action) → original handler name
+// Dispatch Map: (category, action) → original handler name
 // ---------------------------------------------------------------------------
 
 export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
-  bastion_design: {
+  design: {
     update_section: 'bastion_design_update_section',
     synthesize_current_state: 'bastion_design_synthesize_current_state',
     map_add_symbol: 'design.map.add_symbol',
@@ -31,7 +26,7 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
     map_add_control_measure: 'design.map.add_control_measure',
     map_add_overlay_graphic: 'design.map.add_overlay_graphic',
   },
-  bastion_intel: {
+  intel: {
     get_gaps: 'bastion_intel_get_intelligence_gaps',
     get_gap_status: 'bastion_intel_get_gap_filler_status',
     prioritize_gap: 'bastion_intel_prioritize_gap_research',
@@ -48,7 +43,7 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
     detect_conflicts: 'bastion_intel_detect_conflicts',
     draft_assessment: 'bastion_intel_draft_situation_assessment',
   },
-  bastion_graph: {
+  graph: {
     search: 'bastion_graph_search_actors',
     get_actor: 'bastion_graph_get_actor',
     query: 'bastion_graph_query',
@@ -60,13 +55,13 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
     assess_objectives: 'bastion_graph_assess_objectives',
     search_documents: 'bastion_knowledge_search_documents',
   },
-  bastion_brain: {
+  brain: {
     evaluate: 'bastion_brain_evaluate_relevance',
     augment: 'bastion_brain_augment_slice',
     prune: 'bastion_brain_prune_slice',
     stats: 'bastion_brain_get_slice_stats',
   },
-  bastion_ops: {
+  ops: {
     read_problem_set: 'bastion_problem_set_read',
     list_children: 'bastion_problem_set_list_children',
     update_field: 'bastion_problem_set_update_field',
@@ -82,7 +77,7 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
     get_schedule: 'bastion_calendar_get_schedule',
     get_events: 'bastion_calendar_get_events',
   },
-  bastion_admin: {
+  admin: {
     agent_create: 'bastion_agent_create',
     agent_list: 'bastion_agent_list',
     team_create: 'bastion_team_create',
@@ -97,195 +92,71 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
     system_config: 'bastion_system_update_config',
     code_pr: 'bastion_code_create_pr',
   },
-  bastion_staff: {
+  staff: {
     list: 'bastion_personnel_list_staff',
     get_member: 'bastion_personnel_get_member',
     get_clearances: 'bastion_personnel_get_clearances',
   },
 };
 
+// Build action enum from all categories
+const ALL_ACTIONS: string[] = [];
+for (const [cat, actions] of Object.entries(CONSOLIDATED_DISPATCH)) {
+  for (const action of Object.keys(actions)) {
+    ALL_ACTIONS.push(`${cat}.${action}`);
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Consolidated Tool Definitions
+// Single unified tool
 // ---------------------------------------------------------------------------
 
 export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
   {
-    name: 'bastion_design',
-    description: 'Design tab: update CoG/LOE/approach sections, manage map symbols. ALWAYS use update_section to write to canvas. CoG data MUST be nested: CC contains CRs, each CR contains CVs.',
+    name: 'bastion',
+    description: 'BASTION C2 platform tool. Specify category.action (e.g. "design.update_section", "graph.search", "intel.web_search"). For CoG analysis: category=design, action=update_section, section=cog-analysis, data={nested CC→CR→CV structure}.',
     inputSchema: {
       type: 'object',
       properties: {
+        category: {
+          type: 'string',
+          enum: Object.keys(CONSOLIDATED_DISPATCH),
+          description: 'Tool category: design, intel, graph, brain, ops, admin, staff',
+        },
         action: {
           type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_design),
+          description: 'Action within category (e.g. update_section, search, web_search)',
         },
         problem_set_id: { type: 'string' },
-        section: { type: 'string', enum: ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'] },
+        // Design params
+        section: { type: 'string' },
         data: { type: 'object' },
-        sidc: { type: 'string' },
-        symbol_id: { type: 'string' },
-        lat: { type: 'number' },
-        lng: { type: 'number' },
-        mgrs: { type: 'string' },
-        designation: { type: 'string' },
-        echelon: { type: 'string' },
-        type: { type: 'string' },
-        label: { type: 'string' },
-        coordinates: { type: 'array' },
-        graphic_type: { type: 'string' },
-      },
-      required: ['action', 'problem_set_id'],
-    },
-    riskLevel: 'medium',
-  },
-  {
-    name: 'bastion_intel',
-    description: 'Intelligence: PIRs, OSINT events, web search, gap analysis, situation assessment',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_intel),
-        },
-        problem_set_id: { type: 'string' },
+        // Graph params
         query: { type: 'string' },
+        name: { type: 'string' },
+        cypher: { type: 'string' },
+        // Intel params
         pir_id: { type: 'string' },
         event_id: { type: 'string' },
         assumption_text: { type: 'string' },
         answer: { type: 'string' },
-        gap_node_id: { type: 'string' },
+        // Brain params
+        actor_ids: { type: 'array', items: { type: 'string' } },
         reason: { type: 'string' },
-        context: { type: 'string' },
+        // General params
+        id: { type: 'string' },
+        type: { type: 'string' },
+        label: { type: 'string' },
         title: { type: 'string' },
         content: { type: 'string' },
         summary: { type: 'string' },
-        evidence: { type: 'string' },
-        suggested_answer: { type: 'string' },
-      },
-      required: ['action'],
-    },
-    riskLevel: 'medium',
-  },
-  {
-    name: 'bastion_graph',
-    description: 'Knowledge graph: search actors, run Cypher queries, get stats, manage objectives',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_graph),
-        },
-        query: { type: 'string' },
-        name: { type: 'string' },
-        cypher: { type: 'string' },
-        problem_set_id: { type: 'string' },
-        source_objective_id: { type: 'string' },
-        target_workspace_id: { type: 'string' },
-        entity_id: { type: 'string' },
-        type: { type: 'string' },
-        limit: { type: 'number' },
-      },
-      required: ['action'],
-    },
-    riskLevel: 'low',
-  },
-  {
-    name: 'bastion_brain',
-    description: 'Brain curation: evaluate relevance, add/remove actors from brain slice',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_brain),
-        },
-        problem_set_id: { type: 'string' },
-        actor_ids: { type: 'array', items: { type: 'string' } },
-        reason: { type: 'string' },
-      },
-      required: ['action', 'problem_set_id'],
-    },
-    riskLevel: 'medium',
-  },
-  {
-    name: 'bastion_ops',
-    description: 'Operations: problem sets, gates, alerts, schedule, campaign plans',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_ops),
-        },
-        problem_set_id: { type: 'string' },
-        id: { type: 'string' },
-        parent_id: { type: 'string' },
+        message: { type: 'string' },
+        severity: { type: 'string' },
+        description: { type: 'string' },
         field: { type: 'string' },
         value: { type: 'string' },
-        name: { type: 'string' },
-        gate_type: { type: 'string' },
-        target_item_id: { type: 'string' },
-        target_item_title: { type: 'string' },
-        activity_type: { type: 'string' },
-        severity: { type: 'string' },
-        summary: { type: 'string' },
-        message: { type: 'string' },
-        coa_id: { type: 'string' },
-        date_from: { type: 'string' },
-        date_to: { type: 'string' },
-        agent_config: { type: 'object' },
       },
-      required: ['action'],
-    },
-    riskLevel: 'medium',
-  },
-  {
-    name: 'bastion_admin',
-    description: 'Admin: manage agents, teams, skills, resources, system config',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_admin),
-        },
-        name: { type: 'string' },
-        description: { type: 'string' },
-        team_id: { type: 'string' },
-        agent_id: { type: 'string' },
-        task_description: { type: 'string' },
-        problem_set_id: { type: 'string' },
-        category: { type: 'string' },
-        systemPromptFragment: { type: 'string' },
-        type: { type: 'string' },
-        id: { type: 'string' },
-        resource_id: { type: 'string' },
-        capabilities: { type: 'array' },
-        key: { type: 'string' },
-        value: { type: 'string' },
-        title: { type: 'string' },
-        branch: { type: 'string' },
-        files: { type: 'array' },
-      },
-      required: ['action'],
-    },
-    riskLevel: 'high',
-  },
-  {
-    name: 'bastion_staff',
-    description: 'Personnel: list staff, get member details, check clearances',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: Object.keys(CONSOLIDATED_DISPATCH.bastion_staff),
-        },
-        member_id: { type: 'string' },
-      },
-      required: ['action'],
+      required: ['category', 'action'],
     },
     riskLevel: 'medium',
   },

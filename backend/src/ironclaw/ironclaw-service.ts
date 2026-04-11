@@ -97,14 +97,14 @@ function getTabGuidance(tab: string, problemSetId?: string): string {
       return '[TAB GUIDANCE: The commander is viewing the Common Operating Picture. Focus on current operations, events, force disposition, and situational awareness. Discuss what is happening NOW — not planning or design.]';
     case 'design':
       return `[TAB GUIDANCE: The commander is on the Design tab. CRITICAL RULES:
-1. ALWAYS call bastion_design tool action=update_section to write to the canvas. NEVER output analysis as chat text.
+1. ALWAYS call the bastion tool with category=design, action=update_section to write to the canvas. NEVER output analysis as chat text.
 2. CoG analysis MUST use Strange's doctrinal hierarchy: CoG → CC → CR → CV.
    Each CC has specific CRs that sustain it. Each CR has specific CVs that threaten it.
    Structure the data field as nested: { friendly: { cog_statement: "...",
    critical_capabilities: [{ label, description, critical_requirements: [{ label, description,
    critical_vulnerabilities: [{ label, description }] }] }] } }
 3. After writing, confirm briefly and ask about refinements. The canvas updates in real-time.
-Problem set ID: ${problemSetId ?? 'unknown'}]`;
+problem_set_id: ${problemSetId ?? 'unknown'}]`;
     case 'plan':
       return '[TAB GUIDANCE: The commander is on the Plan tab. Focus on campaign planning, COA development, phasing, and mission orders.]';
     case 'understand':
@@ -480,13 +480,24 @@ export class IronclawService {
 
       // Resolve consolidated tool names to original handler names
       const { CONSOLIDATED_DISPATCH } = await import('../mcp/consolidated-tools.js');
-      const dispatch = CONSOLIDATED_DISPATCH[actionType];
-      if (dispatch) {
+      if (actionType === 'bastion') {
+        const category = (toolPayload.category as string) ?? '';
         const action = (toolPayload.action as string) ?? '';
-        const resolved = dispatch[action];
-        if (resolved) {
-          console.log(`[ironclaw] Resolved consolidated tool: ${actionType}.${action} → ${resolved}`);
-          actionType = resolved;
+        const catDispatch = CONSOLIDATED_DISPATCH[category];
+        if (catDispatch?.[action]) {
+          console.log(`[ironclaw] Resolved: bastion.${category}.${action} → ${catDispatch[action]}`);
+          actionType = catDispatch[action];
+        }
+      } else {
+        // Legacy category tool names (bastion_design, etc.)
+        const dispatch = CONSOLIDATED_DISPATCH[actionType.replace('bastion_', '')];
+        if (dispatch) {
+          const action = (toolPayload.action as string) ?? '';
+          const resolved = dispatch[action];
+          if (resolved) {
+            console.log(`[ironclaw] Resolved: ${actionType}.${action} → ${resolved}`);
+            actionType = resolved;
+          }
         }
       }
 
@@ -1241,12 +1252,12 @@ export class IronclawService {
       'IMPORTANT: When the commander asks you to do something, call the tool IMMEDIATELY.',
       'Do NOT ask for permission. The commander\'s request IS the authorization.',
       '',
-      'Available tool categories:',
-      `- bastion_design: action=update_section (write to canvas), synthesize_current_state, map_* operations`,
-      '- bastion_graph: action=search (find actors), query (Cypher), stats, get_actor, adopt_objective',
-      '- bastion_intel: action=web_search, create_pir, answer_pir, get_gaps, draft_assessment',
-      '- bastion_brain: action=evaluate, augment, prune, stats',
-      '- bastion_ops: action=read_problem_set, create_gate, send_alert, log_activity',
+      'Use the `bastion` tool with category + action parameters:',
+      '- category=design, action=update_section → write to canvas',
+      '- category=graph, action=search → find actors | action=query → Cypher query',
+      '- category=intel, action=web_search | create_pir | draft_assessment',
+      '- category=brain, action=evaluate | augment | prune | stats',
+      '- category=ops, action=read_problem_set | create_gate | send_alert',
       '',
       `Problem Set ID for all calls: "${problemSetId}"`,
       '',

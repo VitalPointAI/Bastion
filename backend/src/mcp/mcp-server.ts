@@ -165,18 +165,23 @@ async function executeTool(
   args: Record<string, unknown>,
   agentDID: string,
 ): Promise<unknown> {
-  // Resolve consolidated category tools → original handler name
+  // Resolve unified bastion tool → original handler name
   let resolvedName = toolName;
-  const dispatch = CONSOLIDATED_DISPATCH[toolName];
-  if (dispatch) {
+  if (toolName === 'bastion') {
+    const category = args.category as string | undefined;
     const action = args.action as string | undefined;
-    if (!action || !dispatch[action]) {
+    if (!category || !CONSOLIDATED_DISPATCH[category]) {
       throw new Error(
-        `Invalid action "${action}" for ${toolName}. Valid: ${Object.keys(dispatch).join(', ')}`,
+        `Invalid category "${category}". Valid: ${Object.keys(CONSOLIDATED_DISPATCH).join(', ')}`,
       );
     }
-    resolvedName = dispatch[action];
-    console.log(`[mcp-server] Consolidated dispatch: ${toolName}.${action} → ${resolvedName}`);
+    if (!action || !CONSOLIDATED_DISPATCH[category][action]) {
+      throw new Error(
+        `Invalid action "${action}" for category "${category}". Valid: ${Object.keys(CONSOLIDATED_DISPATCH[category]).join(', ')}`,
+      );
+    }
+    resolvedName = CONSOLIDATED_DISPATCH[category][action];
+    console.log(`[mcp-server] Dispatch: bastion.${category}.${action} → ${resolvedName}`);
   }
 
   console.log(`[mcp-server] Tool call: ${resolvedName}`, {
