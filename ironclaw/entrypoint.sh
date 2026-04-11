@@ -93,6 +93,25 @@ start_mcp_proxy() {
 start_mcp_proxy
 
 # ---------------------------------------------------------------------------
+# Wait for MCP server to be reachable before configuring.
+# Prevents race condition where Ironclaw starts before bastion-mcp is ready.
+# ---------------------------------------------------------------------------
+echo "[entrypoint] Waiting for MCP server at localhost:${MCP_LOCAL_PORT}..."
+MCP_RETRIES=0
+MCP_MAX_RETRIES=30
+while [ "$MCP_RETRIES" -lt "$MCP_MAX_RETRIES" ]; do
+  if curl -sf "http://localhost:${MCP_LOCAL_PORT}/health" >/dev/null 2>&1; then
+    echo "[entrypoint] MCP server is ready"
+    break
+  fi
+  MCP_RETRIES=$((MCP_RETRIES + 1))
+  sleep 2
+done
+if [ "$MCP_RETRIES" -eq "$MCP_MAX_RETRIES" ]; then
+  echo "[entrypoint] WARNING: MCP server not reachable after ${MCP_MAX_RETRIES} attempts — starting anyway"
+fi
+
+# ---------------------------------------------------------------------------
 # Configure Ironclaw via CLI before starting the agent.
 # These settings persist in the database across restarts.
 # ---------------------------------------------------------------------------
