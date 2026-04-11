@@ -89,7 +89,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_problem_set_configure_agents',
-    description: 'Configure AI agents for a problem set (cannot modify Ironclaw own config)',
+    description: 'Configure AI agents for a problem set (not Ironclaw)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -127,7 +127,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_gate_create',
-    description: 'Create a decision gate for approval workflow',
+    description: 'Create decision gate for approval workflow',
     inputSchema: {
       type: 'object',
       properties: {
@@ -142,7 +142,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_code_create_pr',
-    description: 'Create a GitHub PR with proposed code changes',
+    description: 'Create GitHub PR with code changes',
     inputSchema: {
       type: 'object',
       properties: {
@@ -157,21 +157,16 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_update_section',
-    description: 'Update a specific section of the operational design. For cog-analysis, put ALL content inside the data field using this structure: { friendly: { cog_statement: "...", critical_components: [{label, description}], critical_requirements: [{label, description}], critical_vulnerabilities: [{label, description}] }, adversary: { ... } }',
+    description: 'Persist design section data (CoG, framing, LOE, op approach)',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
         section: {
           type: 'string',
           enum: ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'],
-          description: 'Design section to update',
         },
-        data: {
-          type: 'object',
-          description: 'Section content. For cog-analysis: { friendly: { cog_statement: "label", critical_components: [{label, description}], critical_requirements: [{label, description}], critical_vulnerabilities: [{label, description}] }, adversary: { ... } }',
-        },
-        partial: { type: 'boolean', description: 'True for incremental updates, false for full section replacement' },
+        data: { type: 'object' },
       },
       required: ['problem_set_id', 'section', 'data'],
     },
@@ -180,13 +175,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // ── Knowledge Graph Tools ──
   {
     name: 'bastion_graph_search_actors',
-    description: 'Search the knowledge graph for actors (nations, organizations, individuals, military units) by name or type. Returns matching nodes with their properties, relationships, and source documents.',
+    description: 'Search knowledge graph actors by name or type',
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Name or partial name to search for' },
-        type: { type: 'string', description: 'Filter by actor type: state, organization, individual, military, non_state' },
-        limit: { type: 'number', description: 'Max results (default 20)' },
+        query: { type: 'string' },
+        type: { type: 'string', description: 'state|organization|individual|military|non_state' },
+        limit: { type: 'number' },
       },
       required: ['query'],
     },
@@ -194,11 +189,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_graph_get_actor',
-    description: 'Get full details of a specific actor node including all relationships, tensions, source documents, and linked entities.',
+    description: 'Get full actor details with relationships and sources',
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Exact actor name' },
+        name: { type: 'string' },
       },
       required: ['name'],
     },
@@ -206,11 +201,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_graph_query',
-    description: 'Run a read-only Cypher query against the knowledge graph. Use for complex queries like finding paths between actors, counting relationships, or analyzing the graph structure.',
+    description: 'Run read-only Cypher query against knowledge graph',
     inputSchema: {
       type: 'object',
       properties: {
-        cypher: { type: 'string', description: 'Read-only Cypher query (MATCH/RETURN only, no CREATE/DELETE/SET)' },
+        cypher: { type: 'string', description: 'MATCH/RETURN only, no writes' },
       },
       required: ['cypher'],
     },
@@ -218,7 +213,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_graph_stats',
-    description: 'Get knowledge graph statistics: total nodes, relationships, node types, and top actors by relationship count.',
+    description: 'Get knowledge graph node/relationship statistics',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -228,11 +223,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // ── Cross-scope graph & objective hierarchy tools ──
   {
     name: 'bastion_graph_get_objective_hierarchy',
-    description: 'Walk up the parent problem set chain and return objectives from each ancestor, grouped by echelon. Provides cross-echelon objective visibility.',
+    description: 'Get objectives from ancestor problem sets by echelon',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID to start the parent-chain walk from' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -240,12 +235,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_graph_adopt_objective',
-    description: 'Adopt an objective from a parent problem set into a target workspace. Creates a linked copy with DRAFT status.',
+    description: 'Adopt a parent objective into a problem set as DRAFT',
     inputSchema: {
       type: 'object',
       properties: {
-        source_objective_id: { type: 'string', description: 'ID of the objective to adopt' },
-        target_workspace_id: { type: 'string', description: 'Problem set ID to receive the adopted objective' },
+        source_objective_id: { type: 'string' },
+        target_workspace_id: { type: 'string' },
       },
       required: ['source_objective_id', 'target_workspace_id'],
     },
@@ -253,11 +248,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_graph_assess_objectives',
-    description: 'Auto-assess and adopt relevant objectives from a parent problem set into a child. Skips already-adopted objectives.',
+    description: 'Auto-adopt relevant parent objectives into child',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Child problem set ID to populate with parent objectives' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -265,23 +260,23 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_graph_query_global',
-    description: 'Query all actors across the entire knowledge graph without workspace filter. Returns actor nodes with relationship counts.',
+    description: 'Query all actors across global knowledge graph',
     inputSchema: {
       type: 'object',
       properties: {
-        classification: { type: 'string', description: 'Optional classification filter' },
-        limit: { type: 'number', description: 'Max results (default 50, max 200)' },
+        classification: { type: 'string' },
+        limit: { type: 'number' },
       },
     },
     riskLevel: 'low',
   },
   {
     name: 'bastion_graph_query_parent',
-    description: 'Query actors from both a problem set and its parent workspace. Returns merged nodes tagged with source workspace ID.',
+    description: 'Query actors from problem set and its parent',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID (will also include parent workspace actors)' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -289,11 +284,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_synthesize_current_state',
-    description: 'Synthesize the Current State assessment for Problem Framing from knowledge graph actors, relationships, tensions, and strategic documents. Populates the Current State field with a narrative assessment.',
+    description: 'Synthesize current state from knowledge graph into problem framing',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -315,17 +310,17 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // ── Map Overlay Tools ──
   {
     name: 'bastion_design_map_add_symbol',
-    description: 'Add a military symbol to the operational approach map overlay',
+    description: 'Add military symbol to map overlay',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        sidc: { type: 'string', description: 'MIL-STD-2525D SIDC code identifying the symbol type' },
-        designation: { type: 'string', description: 'Unit or element designation (e.g. "1st MarDiv")' },
-        lat: { type: 'number', description: 'Latitude in decimal degrees' },
-        lng: { type: 'number', description: 'Longitude in decimal degrees' },
-        mgrs: { type: 'string', description: 'MGRS grid coordinate (alternative to lat/lng)' },
-        echelon: { type: 'string', description: 'Echelon size (e.g. battalion, brigade, division)' },
+        problem_set_id: { type: 'string' },
+        sidc: { type: 'string', description: 'MIL-STD-2525D SIDC' },
+        designation: { type: 'string' },
+        lat: { type: 'number' },
+        lng: { type: 'number' },
+        mgrs: { type: 'string', description: 'MGRS coord (alt to lat/lng)' },
+        echelon: { type: 'string' },
       },
       required: ['problem_set_id', 'sidc'],
     },
@@ -333,15 +328,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_map_move_symbol',
-    description: 'Move an existing symbol to a new position on the map',
+    description: 'Move map symbol to new position',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        symbol_id: { type: 'string', description: 'ID of the symbol to move' },
-        lat: { type: 'number', description: 'New latitude in decimal degrees' },
-        lng: { type: 'number', description: 'New longitude in decimal degrees' },
-        mgrs: { type: 'string', description: 'New MGRS grid coordinate (alternative to lat/lng)' },
+        problem_set_id: { type: 'string' },
+        symbol_id: { type: 'string' },
+        lat: { type: 'number' },
+        lng: { type: 'number' },
+        mgrs: { type: 'string', description: 'MGRS coord (alt to lat/lng)' },
       },
       required: ['problem_set_id', 'symbol_id'],
     },
@@ -349,12 +344,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_map_remove_symbol',
-    description: 'Remove a symbol from the operational approach map',
+    description: 'Remove symbol from map overlay',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        symbol_id: { type: 'string', description: 'ID of the symbol to remove' },
+        problem_set_id: { type: 'string' },
+        symbol_id: { type: 'string' },
       },
       required: ['problem_set_id', 'symbol_id'],
     },
@@ -362,15 +357,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_map_update_symbol',
-    description: 'Update properties of an existing symbol',
+    description: 'Update map symbol properties',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        symbol_id: { type: 'string', description: 'ID of the symbol to update' },
-        sidc: { type: 'string', description: 'New MIL-STD-2525D SIDC code' },
-        designation: { type: 'string', description: 'New unit or element designation' },
-        echelon: { type: 'string', description: 'New echelon size' },
+        problem_set_id: { type: 'string' },
+        symbol_id: { type: 'string' },
+        sidc: { type: 'string', description: 'MIL-STD-2525D SIDC' },
+        designation: { type: 'string' },
+        echelon: { type: 'string' },
       },
       required: ['problem_set_id', 'symbol_id'],
     },
@@ -378,26 +373,23 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_map_add_control_measure',
-    description: 'Add a control measure (phase line, boundary, objective, etc.) to the map',
+    description: 'Add control measure (phase line, boundary, etc.) to map',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
         type: {
           type: 'string',
           enum: ['phase_line', 'boundary', 'axis_of_advance', 'objective', 'engagement_area', 'nai', 'fscm', 'flot', 'other'],
-          description: 'Control measure type',
         },
-        label: { type: 'string', description: 'Label for the control measure (e.g. "PL RED", "OBJ ALPHA")' },
+        label: { type: 'string' },
         coordinates: {
           type: 'array',
           items: { type: 'object', properties: { lat: { type: 'number' }, lng: { type: 'number' } } },
-          description: 'Array of {lat, lng} coordinate objects defining the measure geometry',
         },
         affiliation: {
           type: 'string',
           enum: ['friendly', 'enemy', 'neutral'],
-          description: 'Force affiliation of the control measure',
         },
       },
       required: ['problem_set_id', 'type', 'label', 'coordinates'],
@@ -406,17 +398,16 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_design_map_add_overlay_graphic',
-    description: 'Add an annotation graphic to the map overlay',
+    description: 'Add annotation graphic to map overlay',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        graphic_type: { type: 'string', description: 'Type of annotation graphic (e.g. "arrow", "circle", "text")' },
-        label: { type: 'string', description: 'Label or annotation text for the graphic' },
+        problem_set_id: { type: 'string' },
+        graphic_type: { type: 'string', description: 'arrow|circle|text etc.' },
+        label: { type: 'string' },
         coordinates: {
           type: 'array',
           items: { type: 'object', properties: { lat: { type: 'number' }, lng: { type: 'number' } } },
-          description: 'Array of {lat, lng} coordinate objects defining the graphic geometry',
         },
       },
       required: ['problem_set_id', 'graphic_type', 'label', 'coordinates'],
@@ -429,11 +420,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_intel_get_intelligence_gaps',
-    description: 'Return current intelligence gaps for a problem set including parent graph suggestions for cross-boundary relevance',
+    description: 'Get intelligence gaps with parent graph suggestions',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -441,11 +432,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_get_gap_filler_status',
-    description: 'Return the gap filler service state: last run time, gaps processed, active cooldowns, next scheduled run',
+    description: 'Get gap filler service status and cooldowns',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -453,13 +444,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_prioritize_gap_research',
-    description: 'Bump a specific intelligence gap to high priority, clear its cooldown, and optionally trigger immediate research',
+    description: 'Prioritize intel gap and clear cooldown',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        gap_node_id: { type: 'string', description: 'Node ID of the gap to prioritize' },
-        reason: { type: 'string', description: 'Reason for prioritization (audit trail)' },
+        problem_set_id: { type: 'string' },
+        gap_node_id: { type: 'string' },
+        reason: { type: 'string', description: 'Audit trail' },
       },
       required: ['problem_set_id', 'gap_node_id', 'reason'],
     },
@@ -467,13 +458,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_request_targeted_research',
-    description: 'Request research on a specific topic or entity via the researcher specialist, creating an async pg-boss job',
+    description: 'Request targeted research via researcher specialist',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        query: { type: 'string', description: 'Research topic or entity to investigate' },
-        context: { type: 'string', description: 'Additional context for why this research matters' },
+        problem_set_id: { type: 'string' },
+        query: { type: 'string', description: 'Topic or entity to research' },
+        context: { type: 'string', description: 'Why this research matters' },
       },
       required: ['problem_set_id', 'query', 'context'],
     },
@@ -485,13 +476,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_intel_get_priority_intel_requirements',
-    description: 'List active PIRs/CCIRs for a problem set ordered by priority',
+    description: 'List PIRs/CCIRs ordered by priority',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        type: { type: 'string', enum: ['CCIR', 'PIR', 'FFIR', 'EEFI'], description: 'Filter by type' },
-        status: { type: 'string', enum: ['ACTIVE', 'ANSWERED', 'SUPERSEDED', 'CANCELLED'], description: 'Filter by status' },
+        problem_set_id: { type: 'string' },
+        type: { type: 'string', enum: ['CCIR', 'PIR', 'FFIR', 'EEFI'] },
+        status: { type: 'string', enum: ['ACTIVE', 'ANSWERED', 'SUPERSEDED', 'CANCELLED'] },
       },
       required: ['problem_set_id'],
     },
@@ -499,15 +490,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_create_pir_from_assumption',
-    description: 'Create a PIR linked to an assumption from the operational design',
+    description: 'Create PIR linked to an operational design assumption',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        assumption_id: { type: 'string', description: 'Assumption ID to link' },
-        assumption_text: { type: 'string', description: 'Text of the assumption' },
-        type: { type: 'string', enum: ['CCIR', 'PIR', 'FFIR', 'EEFI'], description: 'Requirement type (default PIR)' },
-        priority: { type: 'number', description: 'Priority (1=highest)' },
+        problem_set_id: { type: 'string' },
+        assumption_id: { type: 'string' },
+        assumption_text: { type: 'string' },
+        type: { type: 'string', enum: ['CCIR', 'PIR', 'FFIR', 'EEFI'] },
+        priority: { type: 'number', description: '1=highest' },
       },
       required: ['problem_set_id', 'assumption_text'],
     },
@@ -515,13 +506,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_answer_pir',
-    description: 'Mark a PIR as answered with supporting evidence',
+    description: 'Mark PIR as answered with evidence',
     inputSchema: {
       type: 'object',
       properties: {
-        pir_id: { type: 'string', description: 'PIR ID to answer' },
-        answer: { type: 'string', description: 'Answer text with evidence' },
-        answered_by: { type: 'string', description: 'Who answered' },
+        pir_id: { type: 'string' },
+        answer: { type: 'string' },
+        answered_by: { type: 'string' },
       },
       required: ['pir_id', 'answer'],
     },
@@ -529,11 +520,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_derive_pirs_from_design',
-    description: 'Analyze operational design and recommend PIRs from assumptions, CoG analysis, LOEs, and constraints',
+    description: 'Derive recommended PIRs from operational design',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -545,15 +536,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_intel_create_pir_alert',
-    description: 'Create a PIR alert decision when Ironclaw detects intelligence relevant to an active PIR. Routes to the commander for accept/reject/request-more-info.',
+    description: 'Create PIR alert for commander review',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
-        pir_id: { type: 'string', description: 'ID of the active PIR this intelligence relates to' },
-        summary: { type: 'string', description: 'Brief summary of the intelligence finding' },
-        evidence: { type: 'string', description: 'Supporting evidence and source references' },
-        suggested_answer: { type: 'string', description: 'Suggested answer to the PIR based on the intelligence' },
+        problem_set_id: { type: 'string' },
+        pir_id: { type: 'string' },
+        summary: { type: 'string' },
+        evidence: { type: 'string' },
+        suggested_answer: { type: 'string' },
       },
       required: ['problem_set_id', 'pir_id', 'summary', 'evidence', 'suggested_answer'],
     },
@@ -561,11 +552,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_get_pir_alert_history',
-    description: 'Get history of PIR alert decisions and their outcomes for a problem set. Includes approved, rejected, and pending alerts.',
+    description: 'Get PIR alert decision history',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
@@ -577,15 +568,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_skill_create',
-    description: 'Create a new reusable skill that persists across sessions',
+    description: 'Create reusable skill persisted across sessions',
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Skill name (snake_case)' },
-        description: { type: 'string', description: 'What this skill does' },
-        category: { type: 'string', description: 'Category (e.g. planning, intelligence, logistics)' },
-        systemPromptFragment: { type: 'string', description: 'System prompt instructions for executing this skill' },
-        inputSchema: { type: 'object', description: 'JSON Schema for skill input parameters' },
+        name: { type: 'string', description: 'snake_case name' },
+        description: { type: 'string' },
+        category: { type: 'string' },
+        systemPromptFragment: { type: 'string', description: 'System prompt for execution' },
+        inputSchema: { type: 'object' },
       },
       required: ['name', 'description', 'category', 'systemPromptFragment'],
     },
@@ -601,10 +592,10 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Agent display name' },
-        description: { type: 'string', description: 'Agent role and capabilities' },
-        capabilities: { type: 'array', items: { type: 'string' }, description: 'List of capability tags' },
-        problem_set_id: { type: 'string', description: 'Problem set to assign agent to' },
+        name: { type: 'string' },
+        description: { type: 'string' },
+        capabilities: { type: 'array', items: { type: 'string' } },
+        problem_set_id: { type: 'string' },
       },
       required: ['name', 'description'],
     },
@@ -612,11 +603,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_agent_list',
-    description: 'List all registered agents with health status',
+    description: 'List registered agents with health status',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Filter by problem set (optional)' },
+        problem_set_id: { type: 'string' },
       },
     },
     riskLevel: 'low',
@@ -627,14 +618,14 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_team_create',
-    description: 'Create a new agent team for collaborative tasks',
+    description: 'Create agent team for collaborative tasks',
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Team name' },
-        description: { type: 'string', description: 'Team mission and scope' },
-        member_ids: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to add as members' },
-        problem_set_id: { type: 'string', description: 'Problem set scope' },
+        name: { type: 'string' },
+        description: { type: 'string' },
+        member_ids: { type: 'array', items: { type: 'string' } },
+        problem_set_id: { type: 'string' },
       },
       required: ['name', 'description'],
     },
@@ -642,12 +633,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_team_add_member',
-    description: 'Add an agent to an existing team',
+    description: 'Add agent to existing team',
     inputSchema: {
       type: 'object',
       properties: {
-        team_id: { type: 'string', description: 'Team ID' },
-        agent_id: { type: 'string', description: 'Agent ID to add' },
+        team_id: { type: 'string' },
+        agent_id: { type: 'string' },
       },
       required: ['team_id', 'agent_id'],
     },
@@ -655,13 +646,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_team_assign_task',
-    description: 'Assign a task to an agent team for collaborative execution',
+    description: 'Assign task to agent team',
     inputSchema: {
       type: 'object',
       properties: {
-        team_id: { type: 'string', description: 'Team ID' },
-        task_description: { type: 'string', description: 'Description of the task to assign' },
-        problem_set_id: { type: 'string', description: 'Problem set scope' },
+        team_id: { type: 'string' },
+        task_description: { type: 'string' },
+        problem_set_id: { type: 'string' },
       },
       required: ['team_id', 'task_description', 'problem_set_id'],
     },
@@ -673,12 +664,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_intel_web_search',
-    description: 'Search the web via SearXNG for intelligence on a topic. Returns search results with titles, URLs, and snippets.',
+    description: 'Web search via SearXNG for intelligence',
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Search query' },
-        max_results: { type: 'number', description: 'Maximum results (default 5)' },
+        query: { type: 'string' },
+        max_results: { type: 'number' },
       },
       required: ['query'],
     },
@@ -686,15 +677,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_create_research_event',
-    description: 'Create a synthetic OSINT event from autonomous research findings. The event enters the standard ingestion pipeline.',
+    description: 'Create OSINT event from research findings',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set to associate the event with' },
-        title: { type: 'string', description: 'Short title for the finding' },
-        content: { type: 'string', description: 'Full content of the finding' },
-        source_url: { type: 'string', description: 'Optional source URL' },
-        source_name: { type: 'string', description: 'Optional source name (defaults to "Ironclaw Research")' },
+        problem_set_id: { type: 'string' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        source_url: { type: 'string' },
+        source_name: { type: 'string' },
       },
       required: ['problem_set_id', 'title', 'content'],
     },
@@ -702,12 +693,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_process_osint_event',
-    description: 'Trigger the OSINT specialist agent pipeline to process an event, extracting entities, relationships, and tensions.',
+    description: 'Process OSINT event through specialist pipeline',
     inputSchema: {
       type: 'object',
       properties: {
-        event_id: { type: 'string', description: 'OSINT event ID (EVT-* format)' },
-        problem_set_id: { type: 'string', description: 'Problem set context for entity scoping' },
+        event_id: { type: 'string', description: 'EVT-* format' },
+        problem_set_id: { type: 'string' },
       },
       required: ['event_id', 'problem_set_id'],
     },
@@ -715,12 +706,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_detect_conflicts',
-    description: 'Scan the knowledge graph for contradictions, conflicting claims, or opposing intelligence about entities.',
+    description: 'Detect contradictions in knowledge graph',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set brain slice to scan' },
-        entity_name: { type: 'string', description: 'Optional: limit scan to a specific actor name' },
+        problem_set_id: { type: 'string' },
+        entity_name: { type: 'string', description: 'Limit to specific actor' },
       },
       required: ['problem_set_id'],
     },
@@ -728,13 +719,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_intel_draft_situation_assessment',
-    description: 'Gather raw intelligence data for a situation assessment. Returns structured data that Ironclaw synthesizes into a narrative.',
+    description: 'Gather raw intel data for situation assessment',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set to assess' },
-        focus_area: { type: 'string', description: 'Optional focus area or topic' },
-        time_window_hours: { type: 'number', description: 'Hours of history to include (default 24)' },
+        problem_set_id: { type: 'string' },
+        focus_area: { type: 'string' },
+        time_window_hours: { type: 'number' },
       },
       required: ['problem_set_id'],
     },
@@ -742,15 +733,15 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_autonomous_log_activity',
-    description: "Log an autonomous activity entry visible in the commander's activity feed.",
+    description: "Log activity to commander's feed",
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set this activity relates to' },
-        activity_type: { type: 'string', description: 'Activity category (e.g. "intel_research", "brain_curation")' },
-        severity: { type: 'string', description: 'Severity: critical, urgent, routine, informational' },
-        summary: { type: 'string', description: 'One-line summary of what was done' },
-        detail: { type: 'object', description: 'Optional structured detail (JSON)' },
+        problem_set_id: { type: 'string' },
+        activity_type: { type: 'string' },
+        severity: { type: 'string', description: 'critical|urgent|routine|informational' },
+        summary: { type: 'string' },
+        detail: { type: 'object' },
       },
       required: ['problem_set_id', 'activity_type', 'severity', 'summary'],
     },
@@ -758,14 +749,14 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_autonomous_send_alert',
-    description: 'Send an alert to commanders via WebSocket and optionally Telegram. Use for time-sensitive findings.',
+    description: 'Send alert to commanders via WebSocket/Telegram',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set this alert relates to' },
-        message: { type: 'string', description: 'Alert message text' },
-        severity: { type: 'string', enum: ['critical', 'urgent', 'routine'], description: 'Alert severity level' },
-        telegram: { type: 'boolean', description: 'If true and severity is critical/urgent, also send via Telegram' },
+        problem_set_id: { type: 'string' },
+        message: { type: 'string' },
+        severity: { type: 'string', enum: ['critical', 'urgent', 'routine'] },
+        telegram: { type: 'boolean', description: 'Also send via Telegram' },
       },
       required: ['problem_set_id', 'message', 'severity'],
     },
@@ -777,12 +768,12 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // -------------------------------------------------------------------------
   {
     name: 'bastion_brain_evaluate_relevance',
-    description: 'Scan the global knowledge graph for actors/relationships relevant to this problem set but not yet in its brain slice. Returns scored candidates.',
+    description: 'Find global graph actors relevant but missing from slice',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set to evaluate against the global graph' },
-        max_candidates: { type: 'number', description: 'Max candidates to return (default 20)' },
+        problem_set_id: { type: 'string' },
+        max_candidates: { type: 'number' },
       },
       required: ['problem_set_id'],
     },
@@ -790,13 +781,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_brain_augment_slice',
-    description: "Pull actors into this problem set's brain slice by adding to containerIds. Use when you discover globally relevant actors not yet in this problem set's view.",
+    description: 'Pull global actors into problem set brain slice',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set to augment' },
-        actor_ids: { type: 'array', items: { type: 'string' }, description: 'Actor node IDs to add to this slice' },
-        reason: { type: 'string', description: 'Reason for augmenting (audit trail)' },
+        problem_set_id: { type: 'string' },
+        actor_ids: { type: 'array', items: { type: 'string' } },
+        reason: { type: 'string', description: 'Audit trail' },
       },
       required: ['problem_set_id', 'actor_ids', 'reason'],
     },
@@ -804,13 +795,13 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_brain_prune_slice',
-    description: "Remove actors from this problem set's brain slice (removes from containerIds only — does not delete from global brain).",
+    description: 'Remove actors from brain slice (not global)',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set to prune' },
-        actor_ids: { type: 'array', items: { type: 'string' }, description: 'Actor node IDs to remove from this slice' },
-        reason: { type: 'string', description: 'Reason for pruning (audit trail)' },
+        problem_set_id: { type: 'string' },
+        actor_ids: { type: 'array', items: { type: 'string' } },
+        reason: { type: 'string', description: 'Audit trail' },
       },
       required: ['problem_set_id', 'actor_ids', 'reason'],
     },
@@ -818,11 +809,11 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion_brain_get_slice_stats',
-    description: "Get statistics about the problem set's brain slice: size vs global brain, staleness, orphan count.",
+    description: 'Get brain slice stats vs global graph',
     inputSchema: {
       type: 'object',
       properties: {
-        problem_set_id: { type: 'string', description: 'Problem set to get brain slice statistics for' },
+        problem_set_id: { type: 'string' },
       },
       required: ['problem_set_id'],
     },
