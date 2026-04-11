@@ -532,17 +532,31 @@ function makeId(): string {
 
 /**
  * Normalize a single CoG node from LLM output into the expected schema.
- * Handles missing ids, alternate field names, and flat structures.
+ * Handles missing ids, alternate field names, and doctrinal child keys
+ * (critical_capabilities, critical_requirements, critical_vulnerabilities).
  */
 function normalizeCoGNode(raw: Record<string, unknown>, nodeType: string): Record<string, unknown> {
+  // Collect children from all possible keys the LLM might use
+  let rawChildren: unknown[] = [];
+  if (Array.isArray(raw.children) && (raw.children as unknown[]).length > 0) {
+    rawChildren = raw.children as unknown[];
+  } else {
+    // Doctrinal child keys — build hierarchy: CC children are CRs, CR children are CVs
+    const ccArr = (raw.critical_capabilities as unknown[]) ?? (raw.criticalCapabilities as unknown[]) ?? (raw.critical_components as unknown[]) ?? (raw.cc as unknown[]);
+    const crArr = (raw.critical_requirements as unknown[]) ?? (raw.criticalRequirements as unknown[]) ?? (raw.cr as unknown[]);
+    const cvArr = (raw.critical_vulnerabilities as unknown[]) ?? (raw.criticalVulnerabilities as unknown[]) ?? (raw.cv as unknown[]);
+
+    if (ccArr) rawChildren.push(...ccArr.map(c => ({ ...(typeof c === 'string' ? { label: c } : c as Record<string, unknown>), type: 'critical-capability' })));
+    if (crArr) rawChildren.push(...crArr.map(c => ({ ...(typeof c === 'string' ? { label: c } : c as Record<string, unknown>), type: 'critical-requirement' })));
+    if (cvArr) rawChildren.push(...cvArr.map(c => ({ ...(typeof c === 'string' ? { label: c } : c as Record<string, unknown>), type: 'critical-vulnerability' })));
+  }
+
   return {
     id: (raw.id as string) ?? makeId(),
     type: (raw.type as string) ?? nodeType,
     label: (raw.label as string) ?? (raw.name as string) ?? (raw.title as string) ?? '',
     description: (raw.description as string) ?? (raw.assessment as string) ?? '',
-    children: Array.isArray(raw.children)
-      ? (raw.children as Record<string, unknown>[]).map(c => normalizeCoGNode(c, (c.type as string) ?? 'critical-capability'))
-      : [],
+    children: rawChildren.map(c => normalizeCoGNode(c as Record<string, unknown>, (c as Record<string, unknown>).type as string ?? 'critical-capability')),
   };
 }
 
