@@ -247,6 +247,7 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
   };
 
   // Empty state
+  console.log('[CoGTree] render — root:', tree.root ? `"${(tree.root.label ?? '').slice(0, 40)}" children=${tree.root.children?.length}` : 'null');
   if (!tree.root) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-3">
