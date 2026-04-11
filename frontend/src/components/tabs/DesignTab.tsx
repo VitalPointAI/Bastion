@@ -54,7 +54,6 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
     try {
       setError(null);
       const data = await designService.getDesign(problemSetId);
-      console.log('[DesignTab] Loaded design — cogAnalysis friendly root:', data.cogAnalysis?.friendly?.root ? 'present' : 'null', '| adversary root:', data.cogAnalysis?.adversary?.root ? 'present' : 'null');
       setDesignData(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load design';

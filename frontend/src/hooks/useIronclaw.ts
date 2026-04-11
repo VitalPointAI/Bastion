@@ -315,6 +315,7 @@ export function useIronclaw(
       if (!mountedRef.current) return;
       try {
         const data: DataUpdatedPayload = JSON.parse(e.data as string);
+        console.log('[SSE] data_updated event received:', data.domain, data.section, 'listeners:', dataUpdateListenersRef.current.size);
         dataUpdateListenersRef.current.forEach(fn => fn(data));
       } catch {
         // Malformed event data — discard silently

@@ -551,11 +551,12 @@ function normalizeCoGNode(raw: Record<string, unknown>, nodeType: string): Recor
     if (cvArr) rawChildren.push(...cvArr.map(c => ({ ...(typeof c === 'string' ? { label: c } : c as Record<string, unknown>), type: 'critical-vulnerability' })));
   }
 
+  const label = (raw.label as string) ?? (raw.name as string) ?? (raw.title as string) ?? '';
   return {
     id: (raw.id as string) ?? makeId(),
     type: (raw.type as string) ?? nodeType,
-    label: (raw.label as string) ?? (raw.name as string) ?? (raw.title as string) ?? '',
-    description: (raw.description as string) ?? (raw.assessment as string) ?? '',
+    label,
+    description: (raw.description as string) ?? (raw.assessment as string) ?? label,
     children: rawChildren.map(c => normalizeCoGNode(c as Record<string, unknown>, (c as Record<string, unknown>).type as string ?? 'critical-capability')),
   };
 }

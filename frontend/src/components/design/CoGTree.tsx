@@ -115,6 +115,34 @@ function findNode(root: CoGNode | null, nodeId: string): CoGNode | null {
   return null;
 }
 
+/** Collect all descendant IDs of a node (inclusive). */
+function getDescendantIds(root: CoGNode | null, nodeId: string): Set<string> {
+  const ids = new Set<string>();
+  const node = root ? findNode(root, nodeId) : null;
+  if (!node) return ids;
+  function walk(n: CoGNode) {
+    ids.add(n.id);
+    for (const c of safeChildren(n)) walk(c);
+  }
+  walk(node);
+  return ids;
+}
+
+/** Collect all ancestor IDs from root down to the given node. */
+function getAncestorIds(root: CoGNode | null, nodeId: string): Set<string> {
+  const ids = new Set<string>();
+  if (!root) return ids;
+  function walk(n: CoGNode): boolean {
+    if (n.id === nodeId) { ids.add(n.id); return true; }
+    for (const c of safeChildren(n)) {
+      if (walk(c)) { ids.add(n.id); return true; }
+    }
+    return false;
+  }
+  walk(root);
+  return ids;
+}
+
 // ─── Layout Helpers ──────────────────────────────────────────────────────────
 
 interface PositionedNode {
@@ -215,6 +243,14 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
   const selectedNode = selectedNodeId ? findNode(tree.root, selectedNodeId) : null;
   const selectedPos = selectedNodeId ? positions.get(selectedNodeId) : null;
 
+  // When a node is selected, highlight its full path (ancestors + descendants)
+  const highlightedIds = useMemo(() => {
+    if (!selectedNodeId || !tree.root) return null;
+    const ancestors = getAncestorIds(tree.root, selectedNodeId);
+    const descendants = getDescendantIds(tree.root, selectedNodeId);
+    return new Set([...ancestors, ...descendants]);
+  }, [selectedNodeId, tree.root]);
+
   // Handlers
   const handleAddRoot = () => {
     onTreeChange({
@@ -247,7 +283,6 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
   };
 
   // Empty state
-  console.log('[CoGTree] render — root:', tree.root ? `"${(tree.root.label ?? '').slice(0, 40)}" children=${tree.root.children?.length}` : 'null');
   if (!tree.root) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-3">
@@ -310,14 +345,19 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
             const y2 = toPos.y;
             const midY = (y1 + y2) / 2;
 
+            const edgeHighlighted = highlightedIds ? highlightedIds.has(fromId) && highlightedIds.has(toId) : false;
+            const edgeDimmed = highlightedIds ? !edgeHighlighted : false;
+
             return (
               <path
                 key={`${fromId}-${toId}`}
                 d={`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`}
-                stroke="#4b5563"
-                strokeWidth={2}
+                stroke={edgeHighlighted ? '#60a5fa' : '#4b5563'}
+                strokeWidth={edgeHighlighted ? 3 : 2}
                 fill="none"
+                opacity={edgeDimmed ? 0.15 : 1}
                 markerEnd={`url(#arrowhead-${side})`}
+                style={{ transition: 'stroke 0.2s, opacity 0.2s, stroke-width 0.2s' }}
               />
             );
           })}
@@ -332,6 +372,8 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
           const isSelected = selectedNodeId === n.id;
           const isHovered = hoveredNodeId === n.id;
           const canAddChild = CHILD_TYPE[n.type] !== null;
+          const nodeHighlighted = highlightedIds ? highlightedIds.has(n.id) : false;
+          const nodeDimmed = highlightedIds ? !nodeHighlighted : false;
 
           return (
             <div key={n.id}>
@@ -343,8 +385,8 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
                   top: pos.y,
                   width: NODE_WIDTH,
                   height: NODE_HEIGHT,
-                  backgroundColor: '#1f2937',
-                  border: `2px solid ${isSelected ? '#fff' : isHovered ? color : '#374151'}`,
+                  backgroundColor: nodeHighlighted ? '#1e3a5f' : '#1f2937',
+                  border: `2px solid ${isSelected ? '#fff' : isHovered ? color : nodeHighlighted ? '#60a5fa' : '#374151'}`,
                   borderRadius: 8,
                   borderLeftWidth: 4,
                   borderLeftColor: color,
@@ -352,7 +394,8 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
                   flexDirection: 'column',
                   justifyContent: 'center',
                   padding: '4px 8px',
-                  transition: 'border-color 0.15s',
+                  opacity: nodeDimmed ? 0.25 : 1,
+                  transition: 'border-color 0.2s, opacity 0.2s, background-color 0.2s',
                 }}
                 onClick={() => setSelectedNodeId(isSelected ? null : n.id)}
                 onMouseEnter={() => setHoveredNodeId(n.id)}

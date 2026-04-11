@@ -129,8 +129,6 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
   useEffect(() => {
     const friendly = normalizeCoGTree(initialData?.friendly);
     const adversary = normalizeCoGTree(initialData?.adversary);
-    console.log('[CoGAnalysisSection] initialData changed — friendly root:', friendly.root?.label?.slice(0, 50) ?? 'null', 'children:', friendly.root?.children?.length ?? 0, '| adversary root:', adversary.root?.label?.slice(0, 50) ?? 'null', 'children:', adversary.root?.children?.length ?? 0);
-    console.log('[CoGAnalysisSection] raw initialData.friendly:', JSON.stringify(initialData?.friendly)?.slice(0, 300));
     setCogAnalysis({ friendly, adversary });
   }, [initialData]);
 
