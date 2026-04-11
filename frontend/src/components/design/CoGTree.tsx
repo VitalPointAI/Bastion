@@ -1,13 +1,17 @@
 /**
  * CoGTree
  *
- * Phase 25 Plan 03: Interactive SVG tree diagram for one CoG analysis
- * (friendly or adversary). Top-down layout using Strange's CG-CC-CR-CV model.
- * Follows EffectChainDiagram pattern: manual position calculation, SVG paths
- * for edges, HTML overlays for interactive nodes.
+ * Interactive pan/zoom tree diagram for one CoG analysis (friendly or adversary).
+ * Top-down layout using Strange's CG-CC-CR-CV model.
+ *
+ * Controls:
+ * - Click + drag: pan the canvas
+ * - Mouse wheel: zoom in/out
+ * - Click node: highlight ancestor + descendant path
+ * - "Fit" button: auto-zoom to fit entire tree in view
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import type { CoGNode, CoGTree as CoGTreeType } from '../../lib/design-service.ts';
 import { CoGNodeEditor } from './CoGNodeEditor.tsx';
 
@@ -18,6 +22,8 @@ const NODE_HEIGHT = 60;
 const LEVEL_SPACING = 100;
 const NODE_SPACING = 20;
 const PADDING = 40;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 2;
 
 // ─── Node Type Colors ────────────────────────────────────────────────────────
 
@@ -48,7 +54,6 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
-/** Ensure children is always an array — API may return null/undefined */
 function safeChildren(node: CoGNode): CoGNode[] {
   return Array.isArray(node.children) ? node.children : [];
 }
@@ -93,7 +98,7 @@ function updateNode(tree: CoGTreeType, nodeId: string, updates: { label: string;
 
 function deleteNode(tree: CoGTreeType, nodeId: string): CoGTreeType {
   if (!tree.root) return tree;
-  if (tree.root.id === nodeId) return tree; // Cannot delete root
+  if (tree.root.id === nodeId) return tree;
 
   function remove(node: CoGNode): CoGNode {
     return {
@@ -115,7 +120,6 @@ function findNode(root: CoGNode | null, nodeId: string): CoGNode | null {
   return null;
 }
 
-/** Collect all descendant IDs of a node (inclusive). */
 function getDescendantIds(root: CoGNode | null, nodeId: string): Set<string> {
   const ids = new Set<string>();
   const node = root ? findNode(root, nodeId) : null;
@@ -128,7 +132,6 @@ function getDescendantIds(root: CoGNode | null, nodeId: string): Set<string> {
   return ids;
 }
 
-/** Collect all ancestor IDs from root down to the given node. */
 function getAncestorIds(root: CoGNode | null, nodeId: string): Set<string> {
   const ids = new Set<string>();
   if (!root) return ids;
@@ -171,14 +174,12 @@ function computePositions(root: CoGNode): Map<string, { x: number; y: number }> 
   const flat = flattenTree(root);
   const positions = new Map<string, { x: number; y: number }>();
 
-  // Group by level
   const levels: PositionedNode[][] = [];
   for (const item of flat) {
     if (!levels[item.level]) levels[item.level] = [];
     levels[item.level].push(item);
   }
 
-  // Find max level width for centering
   let maxLevelWidth = 0;
   for (const level of levels) {
     if (!level) continue;
@@ -217,6 +218,15 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
+  // Pan/zoom state
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [dragging, setDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const panOrigin = useRef({ x: 0, y: 0 });
+
   // Compute layout
   const { positions, svgWidth, svgHeight, flatNodes } = useMemo(() => {
     if (!tree.root) {
@@ -235,7 +245,7 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
     return {
       positions: pos,
       svgWidth: maxX + PADDING,
-      svgHeight: maxY + PADDING + 40, // extra space for add buttons
+      svgHeight: maxY + PADDING + 40,
       flatNodes: flat,
     };
   }, [tree]);
@@ -243,13 +253,81 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
   const selectedNode = selectedNodeId ? findNode(tree.root, selectedNodeId) : null;
   const selectedPos = selectedNodeId ? positions.get(selectedNodeId) : null;
 
-  // When a node is selected, highlight its full path (ancestors + descendants)
   const highlightedIds = useMemo(() => {
     if (!selectedNodeId || !tree.root) return null;
     const ancestors = getAncestorIds(tree.root, selectedNodeId);
     const descendants = getDescendantIds(tree.root, selectedNodeId);
     return new Set([...ancestors, ...descendants]);
   }, [selectedNodeId, tree.root]);
+
+  // Fit-to-view: calculate zoom and pan to fit the entire tree in the container
+  const fitToView = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || svgWidth === 0 || svgHeight === 0) return;
+
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const scaleX = cw / svgWidth;
+    const scaleY = ch / svgHeight;
+    const fitZoom = Math.min(scaleX, scaleY, 1) * 0.9; // 90% to add margin
+
+    const fitPanX = (cw - svgWidth * fitZoom) / 2;
+    const fitPanY = (ch - svgHeight * fitZoom) / 2;
+
+    setZoom(fitZoom);
+    setPan({ x: fitPanX, y: fitPanY });
+  }, [svgWidth, svgHeight]);
+
+  // Auto-fit on first render and when tree changes
+  useEffect(() => {
+    fitToView();
+  }, [fitToView]);
+
+  // Pan handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only pan on background click (not on nodes)
+    if ((e.target as HTMLElement).closest('[data-cog-node]')) return;
+    isPanning.current = true;
+    setDragging(true);
+    panStart.current = { x: e.clientX, y: e.clientY };
+    panOrigin.current = { ...pan };
+    e.preventDefault();
+  }, [pan]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanning.current) return;
+    setPan({
+      x: panOrigin.current.x + (e.clientX - panStart.current.x),
+      y: panOrigin.current.y + (e.clientY - panStart.current.y),
+    });
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    isPanning.current = false;
+    setDragging(false);
+  }, []);
+
+  // Zoom handler — zoom toward cursor position
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * delta));
+
+    // Adjust pan to keep cursor position stable
+    const scale = newZoom / zoom;
+    setPan({
+      x: cursorX - (cursorX - pan.x) * scale,
+      y: cursorY - (cursorY - pan.y) * scale,
+    });
+    setZoom(newZoom);
+  }, [zoom, pan]);
 
   // Handlers
   const handleAddRoot = () => {
@@ -312,9 +390,56 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
     return text.length > max ? text.slice(0, max - 1) + '\u2026' : text;
   }
 
+  const zoomPercent = Math.round(zoom * 100);
+
   return (
-    <div className="relative" style={{ overflowX: 'auto' }}>
-      <div className="relative" style={{ width: svgWidth, height: svgHeight, minWidth: '100%' }}>
+    <div
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden"
+      style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
+    >
+      {/* Zoom controls */}
+      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-gray-800/80 rounded-lg border border-gray-700 px-1.5 py-1">
+        <button
+          onClick={() => { setZoom(z => Math.max(MIN_ZOOM, z * 0.8)); }}
+          className="text-gray-400 hover:text-white px-1.5 py-0.5 text-sm font-mono"
+          title="Zoom out"
+        >
+          −
+        </button>
+        <span className="text-[10px] text-gray-400 min-w-8 text-center">{zoomPercent}%</span>
+        <button
+          onClick={() => { setZoom(z => Math.min(MAX_ZOOM, z * 1.25)); }}
+          className="text-gray-400 hover:text-white px-1.5 py-0.5 text-sm font-mono"
+          title="Zoom in"
+        >
+          +
+        </button>
+        <div className="w-px h-4 bg-gray-600 mx-0.5" />
+        <button
+          onClick={fitToView}
+          className="text-gray-400 hover:text-white px-1.5 py-0.5 text-[10px]"
+          title="Fit tree to view"
+        >
+          Fit
+        </button>
+      </div>
+
+      {/* Transformed canvas */}
+      <div
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: '0 0',
+          width: svgWidth,
+          height: svgHeight,
+          position: 'absolute',
+        }}
+      >
         {/* SVG layer for edges */}
         <svg
           width={svgWidth}
@@ -379,6 +504,7 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
             <div key={n.id}>
               {/* Node */}
               <div
+                data-cog-node
                 className="absolute cursor-pointer select-none"
                 style={{
                   left: pos.x,
@@ -397,7 +523,10 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
                   opacity: nodeDimmed ? 0.25 : 1,
                   transition: 'border-color 0.2s, opacity 0.2s, background-color 0.2s',
                 }}
-                onClick={() => setSelectedNodeId(isSelected ? null : n.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedNodeId(isSelected ? null : n.id);
+                }}
                 onMouseEnter={() => setHoveredNodeId(n.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
               >
@@ -422,6 +551,7 @@ export function CoGTree({ tree, side, onTreeChange, readOnly }: CoGTreeProps) {
               {/* Add child button (shown on hover) */}
               {!readOnly && canAddChild && (isHovered || isSelected) && (
                 <button
+                  data-cog-node
                   className="absolute flex items-center justify-center w-5 h-5 bg-gray-700 hover:bg-gray-600 border border-gray-500 rounded-full text-gray-300 text-xs leading-none z-10"
                   style={{
                     left: pos.x + NODE_WIDTH / 2 - 10,
