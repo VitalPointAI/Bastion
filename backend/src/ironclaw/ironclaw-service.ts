@@ -89,13 +89,22 @@ function globalChannelId(userDid: string): string {
  * Return tab-specific guidance that tells Ironclaw how to behave
  * in the context of the user's current tab. This scopes the conversation
  * so COP discussions stay operational, Design stays doctrinal, etc.
+ * @param problemSetId - included in design tab guidance for tool calls
  */
-function getTabGuidance(tab: string): string {
+function getTabGuidance(tab: string, problemSetId?: string): string {
   switch (tab) {
     case 'cop':
       return '[TAB GUIDANCE: The commander is viewing the Common Operating Picture. Focus on current operations, events, force disposition, and situational awareness. Discuss what is happening NOW — not planning or design.]';
     case 'design':
-      return '[TAB GUIDANCE: The commander is on the Design tab. CRITICAL: When asked to create, update, or analyze design content (CoG, problem framing, LOE, operational approach), ALWAYS call the bastion_design tool with action "update_section" to write directly to the canvas. Do NOT output analysis text in chat — write it to the canvas and confirm briefly. The commander sees the canvas update in real-time. Work collaboratively: write to canvas, then discuss refinements.]';
+      return `[TAB GUIDANCE: The commander is on the Design tab. CRITICAL RULES:
+1. ALWAYS call bastion_design tool action=update_section to write to the canvas. NEVER output analysis as chat text.
+2. CoG analysis MUST use Strange's doctrinal hierarchy: CoG → CC → CR → CV.
+   Each CC has specific CRs that sustain it. Each CR has specific CVs that threaten it.
+   Structure the data field as nested: { friendly: { cog_statement: "...",
+   critical_capabilities: [{ label, description, critical_requirements: [{ label, description,
+   critical_vulnerabilities: [{ label, description }] }] }] } }
+3. After writing, confirm briefly and ask about refinements. The canvas updates in real-time.
+Problem set ID: ${problemSetId ?? 'unknown'}]`;
     case 'plan':
       return '[TAB GUIDANCE: The commander is on the Plan tab. Focus on campaign planning, COA development, phasing, and mission orders.]';
     case 'understand':
@@ -345,7 +354,7 @@ export class IronclawService {
     // 3. Build context-prefixed message for Ironclaw (if context provided)
     // The prefix helps Ironclaw tailor responses to the current UI state.
     // The original content is persisted; only the enriched version is sent to the AI.
-    const tabGuidance = context?.currentTab ? getTabGuidance(context.currentTab) : '';
+    const tabGuidance = context?.currentTab ? getTabGuidance(context.currentTab, problemSetId) : '';
     const contextPrefix = context
       ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]${tabGuidance ? `\n${tabGuidance}` : ''}`
       : '';

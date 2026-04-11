@@ -106,7 +106,7 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
 export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
   {
     name: 'bastion_design',
-    description: 'Design tab: update CoG/LOE/approach sections, manage map symbols. ALWAYS use update_section to write analysis to the canvas.',
+    description: 'Design tab: update CoG/LOE/approach sections, manage map symbols. ALWAYS use update_section to write to canvas. CoG data MUST be nested: CC contains CRs, each CR contains CVs.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -547,8 +547,80 @@ function normalizeCoGNode(raw: Record<string, unknown>, nodeType: string): Recor
 }
 
 /**
+ * Enforce doctrinal CoG hierarchy: CoG → CC → CR → CV (Strange's framework).
+ *
+ * If CCs, CRs, and CVs are flat children of the root (no nesting),
+ * restructure using `parent_cc` / `parent_cr` fields if the LLM provided
+ * them, otherwise leave flat (bad associations are worse than no nesting).
+ */
+function enforceCoGHierarchy(root: Record<string, unknown>): Record<string, unknown> {
+  const children = root.children as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(children) || children.length === 0) return root;
+
+  const ccs = children.filter(c => c.type === 'critical-capability');
+  const crs = children.filter(c => c.type === 'critical-requirement');
+  const cvs = children.filter(c => c.type === 'critical-vulnerability');
+
+  // If CCs already have nested children, the hierarchy is already correct
+  const ccsHaveChildren = ccs.some(cc =>
+    Array.isArray(cc.children) && (cc.children as unknown[]).length > 0,
+  );
+  if (ccsHaveChildren) return root;
+
+  // Only restructure if we have CCs + (CRs or CVs) as flat siblings
+  if (ccs.length === 0) return root;
+  if (crs.length === 0 && cvs.length === 0) return root;
+
+  // Build a lookup of CCs by label (lowercased) for parent matching
+  const ccByLabel = new Map<string, Record<string, unknown>>();
+  const ccById = new Map<string, Record<string, unknown>>();
+  for (const cc of ccs) {
+    cc.children = [];
+    ccByLabel.set(String(cc.label ?? '').toLowerCase(), cc);
+    ccById.set(String(cc.id ?? ''), cc);
+  }
+
+  // Assign CRs to their parent CC using parent_cc field or first CC as fallback
+  const crById = new Map<string, Record<string, unknown>>();
+  for (const cr of crs) {
+    cr.children = [];
+    crById.set(String(cr.id ?? ''), cr);
+    const parentRef = (cr.parent_cc as string) ?? (cr.parentCc as string) ?? (cr.cc as string) ?? '';
+    const parentCC = ccById.get(parentRef) ?? ccByLabel.get(parentRef.toLowerCase());
+    if (parentCC) {
+      (parentCC.children as Record<string, unknown>[]).push(cr);
+    } else {
+      // No explicit parent — attach to first CC
+      (ccs[0].children as Record<string, unknown>[]).push(cr);
+    }
+  }
+
+  // Assign CVs to their parent CR using parent_cr field
+  for (const cv of cvs) {
+    const parentRef = (cv.parent_cr as string) ?? (cv.parentCr as string) ?? (cv.cr as string) ?? '';
+    const parentCR = crById.get(parentRef);
+    if (parentCR) {
+      if (!Array.isArray(parentCR.children)) parentCR.children = [];
+      (parentCR.children as Record<string, unknown>[]).push(cv);
+    } else if (crs.length > 0) {
+      // No explicit parent — attach to first CR
+      if (!Array.isArray(crs[0].children)) crs[0].children = [];
+      (crs[0].children as Record<string, unknown>[]).push(cv);
+    } else {
+      // No CRs at all — attach directly to first CC
+      (ccs[0].children as Record<string, unknown>[]).push(cv);
+    }
+  }
+
+  // Root's children are now only CCs (CRs and CVs are nested within)
+  return { ...root, children: ccs };
+}
+
+/**
  * Normalize CoG analysis data from LLM output into the tree format the frontend expects:
  * { friendly: { root: CoGNode | null }, adversary: { root: CoGNode | null } }
+ *
+ * Enforces doctrinal hierarchy: CoG → CC → CR → CV (Strange's framework).
  *
  * Handles common LLM output patterns:
  * 1. Already correct format: { friendly: { root: { ... } } }
@@ -559,10 +631,10 @@ function normalizeCoGNode(raw: Record<string, unknown>, nodeType: string): Recor
 function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unknown> {
 
   function buildTreeFromFlat(side: Record<string, unknown>): Record<string, unknown> {
-    // If it already has a valid root object, normalize it
+    // If it already has a valid root object, normalize it then enforce hierarchy
     if (side.root && typeof side.root === 'object') {
-      const root = side.root as Record<string, unknown>;
-      return { root: normalizeCoGNode(root, 'cog') };
+      const root = normalizeCoGNode(side.root as Record<string, unknown>, 'cog');
+      return { root: enforceCoGHierarchy(root) };
     }
     // If root is a string (just the CoG statement), build from flat fields
     if (typeof side.root === 'string') {
@@ -589,59 +661,27 @@ function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unk
     const crArray = (side.critical_requirements as unknown[]) ?? (side.criticalRequirements as unknown[]) ?? (side.cr as unknown[]) ?? [];
     const cvArray = (side.critical_vulnerabilities as unknown[]) ?? (side.criticalVulnerabilities as unknown[]) ?? (side.cv as unknown[]) ?? [];
 
-    function makeNodes(arr: unknown[], type: string, childType?: string, childArr?: (parent: Record<string, unknown>) => unknown[]): Record<string, unknown>[] {
+    function makeNodes(arr: unknown[], type: string): Record<string, unknown>[] {
       return arr.map((item) => {
-        const obj = (typeof item === 'string')
-          ? { label: item }
-          : (item as Record<string, unknown>);
-        const children = childArr ? childArr(obj) : [];
-        return normalizeCoGNode({
-          ...obj,
-          type,
-          children: Array.isArray(children)
-            ? children.map(c => typeof c === 'string' ? { label: c, type: childType } : c)
-            : [],
-        }, type);
+        const obj = (typeof item === 'string') ? { label: item } : (item as Record<string, unknown>);
+        return normalizeCoGNode({ ...obj, type }, type);
       });
     }
 
-    // Build CC nodes; each CC can contain CR children, each CR can contain CV children
-    const ccNodes = makeNodes(ccArray, 'critical-capability', 'critical-requirement', (cc) => {
-      const crs = (cc.critical_requirements as unknown[]) ?? (cc.criticalRequirements as unknown[]) ?? (cc.requirements as unknown[]) ?? [];
-      return crs.map((cr) => {
-        const crObj = (typeof cr === 'string') ? { label: cr } : (cr as Record<string, unknown>);
-        const cvs = (crObj.critical_vulnerabilities as unknown[]) ?? (crObj.criticalVulnerabilities as unknown[]) ?? (crObj.vulnerabilities as unknown[]) ?? [];
-        return normalizeCoGNode({
-          ...crObj,
-          type: 'critical-requirement',
-          children: cvs.map(cv => typeof cv === 'string' ? { label: cv, type: 'critical-vulnerability' } : cv),
-        }, 'critical-requirement');
-      });
-    });
+    const ccNodes = makeNodes(ccArray, 'critical-capability');
+    const crNodes = makeNodes(crArray, 'critical-requirement');
+    const cvNodes = makeNodes(cvArray, 'critical-vulnerability');
 
-    // If CR/CV were at the top level (not nested under CC), attach them as direct children
-    let topLevelCRNodes: Record<string, unknown>[] = [];
-    let topLevelCVNodes: Record<string, unknown>[] = [];
-    if (ccNodes.length === 0 || crArray.length > 0) {
-      topLevelCRNodes = makeNodes(crArray, 'critical-requirement', 'critical-vulnerability', (cr) => {
-        return (cr.critical_vulnerabilities as unknown[]) ?? (cr.criticalVulnerabilities as unknown[]) ?? (cr.vulnerabilities as unknown[]) ?? [];
-      });
-    }
-    if (ccNodes.length === 0 || cvArray.length > 0) {
-      topLevelCVNodes = makeNodes(cvArray, 'critical-vulnerability');
-    }
-
-    const allChildren = [...ccNodes, ...topLevelCRNodes, ...topLevelCVNodes];
-
-    return {
-      root: {
-        id: makeId(),
-        type: 'cog',
-        label: cogLabel,
-        description: cogDescription,
-        children: allChildren,
-      },
+    // Build flat tree, then enforce doctrinal hierarchy
+    const flatRoot = {
+      id: makeId(),
+      type: 'cog',
+      label: cogLabel,
+      description: cogDescription,
+      children: [...ccNodes, ...crNodes, ...cvNodes],
     };
+
+    return { root: enforceCoGHierarchy(flatRoot) };
   }
 
   // Check if data already has friendly/adversary structure
