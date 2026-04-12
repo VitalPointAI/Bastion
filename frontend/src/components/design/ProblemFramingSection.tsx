@@ -243,6 +243,33 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
+  // Sync form state when initialData changes (e.g. SSE data_updated → re-fetch).
+  // Skipped while the user is actively editing a field so we don't clobber
+  // in-progress typing. If updates arrive during focus, they're queued into
+  // pendingInterviewUpdate and applied on blur (see existing handlers below).
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!initialData) return;
+    if (inputFocusedRef.current) {
+      setPendingInterviewUpdate(initialData);
+      setShowPendingNotice(true);
+      return;
+    }
+    setFormData({
+      currentState: initialData.currentState ?? '',
+      desiredEndState: initialData.desiredEndState ?? '',
+      problemStatement: initialData.problemStatement || generateProblemStatement(initialData),
+      keyTensions: initialData.keyTensions ?? [],
+      obstacles: initialData.obstacles ?? [],
+      opportunities: initialData.opportunities ?? [],
+      assumptions: initialData.assumptions ?? [],
+      constraints: initialData.constraints ?? [],
+    });
+  }, [initialData]);
+
   // Subscribe to Ironclaw field write events — drafts go directly into form fields
   useEffect(() => {
     const handleFieldWrite = (e: Event) => {
