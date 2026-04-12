@@ -29,7 +29,6 @@ import type {
   DataUpdatedPayload,
 } from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
-import { useDesignInterview } from '../hooks/useDesignInterview.ts';
 import { ironclawApi } from '../lib/ironclaw-service.ts';
 import { useProblemSet } from './ProblemSetContext.tsx';
 import { useUser } from './UserContext.tsx';
@@ -154,9 +153,6 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     userRole: userRoleInActive ?? undefined,
   });
 
-  // Design interview state — active when user clicks "Guide Me" on Design tab
-  // Design interview removed — useDesignInterview hook retained for future use
-  const _designInterview = useDesignInterview(activeProblemSetId ?? 'none');
 
   // ─── Greeting on first open (per session, not per close/reopen) ────────────
   const greetingShownRef = useRef(false);

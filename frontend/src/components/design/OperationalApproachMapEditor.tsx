@@ -40,7 +40,8 @@ import type { MapOverlay, MapSymbol, ControlMeasure } from '../../lib/design-ser
 import * as mapOverlayService from '../../lib/map-overlay-service.ts';
 import { latLngToMGRS } from '../../lib/mgrs-coordinator.ts';
 import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../lib/map-tiles.ts';
-import { useDesignInterview } from '../../hooks/useDesignInterview.ts';
+import { useYjsDocument } from '../../lib/yjs-hooks.ts';
+import { useUser } from '../../context/UserContext.tsx';
 import { MapSymbolPicker } from './MapSymbolPicker.tsx';
 import './OperationalApproachMapEditor.css';
 
@@ -392,9 +393,19 @@ export function OperationalApproachMapEditor({
 
   // ─── Yjs collaborative sync (Plan 56-04) ────────────────────────────────
 
-  // Reuse the existing design-interview Yjs document — no new WebSocket connection.
-  // useDesignInterview with the same problemSetId reuses the same Yjs doc.
-  const { getMap } = useDesignInterview(problemSetId);
+  // Shared Yjs document for collaborative map editing. Keyed on the problem
+  // set so all clients editing the same problem set connect to the same doc.
+  const { userDID, displayName } = useUser();
+  const { getMap } = useYjsDocument({
+    documentId: `design-${problemSetId}`,
+    planId: problemSetId,
+    user: {
+      did: userDID ?? 'anonymous',
+      name: displayName ?? 'Unknown',
+      role: 'editor',
+      color: '#6b7280',
+    },
+  });
 
   // Y.Map instances on the shared design-interview document
   const symbolsMap = useMemo(

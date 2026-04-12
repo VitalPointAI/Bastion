@@ -115,9 +115,6 @@ function ContentField({
   );
 }
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
-import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
-import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
-import { DesignInterviewGate } from './DesignInterviewGate.tsx';
 
 export interface ProblemFramingSectionProps {
   problemSetId: string;
@@ -217,9 +214,7 @@ const FIELD_MAP: Record<string, keyof ProblemFramingData> = {
 };
 
 export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: ProblemFramingSectionProps) {
-  const { toggleDrawer, onFieldWrite } = useIronclawContext();
-  const designInterview = useDesignInterview(problemSetId);
-  const { participants, isCollaborative, isMyTurn } = designInterview;
+  const { onFieldWrite } = useIronclawContext();
   const [formData, setFormData] = useState<ProblemFramingData>(() => ({
     currentState: initialData?.currentState ?? '',
     desiredEndState: initialData?.desiredEndState ?? '',
@@ -235,9 +230,9 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const synthesizeAttempted = useRef(false);
 
-  // Track focus state to avoid overwriting user edits with interview-sourced data
+  // Track focus state to avoid overwriting user edits with SSE-pushed data
   const inputFocusedRef = useRef(false);
-  const [pendingInterviewUpdate, setPendingInterviewUpdate] = useState<ProblemFramingData | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState<ProblemFramingData | null>(null);
   const [showPendingNotice, setShowPendingNotice] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -246,7 +241,7 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   // Sync form state when initialData changes (e.g. SSE data_updated → re-fetch).
   // Skipped while the user is actively editing a field so we don't clobber
   // in-progress typing. If updates arrive during focus, they're queued into
-  // pendingInterviewUpdate and applied on blur (see existing handlers below).
+  // pendingUpdate and applied on blur (see the applyPendingUpdate handler).
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -254,7 +249,7 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
     }
     if (!initialData) return;
     if (inputFocusedRef.current) {
-      setPendingInterviewUpdate(initialData);
+      setPendingUpdate(initialData);
       setShowPendingNotice(true);
       return;
     }
@@ -369,128 +364,49 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   }, [formData, onUpdate]);
 
   const updateField = useCallback((field: keyof ProblemFramingData, value: unknown) => {
-    setFormData((prev) => {
-      // Emit field-changed event for Ironclaw observation (only for string fields, only during interview)
-      if (typeof value === 'string' && designInterview.isActive) {
-        const prevValue = typeof prev[field] === 'string' ? prev[field] as string : '';
-        window.dispatchEvent(new CustomEvent('ironclaw:field-changed', {
-          detail: { field, value, previousValue: prevValue },
-        }));
-      }
-      return { ...prev, [field]: value };
-    });
-  }, [designInterview.isActive]);
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  // Handle Guide Me button click
-  const handleGuideMe = useCallback(async () => {
-    const hasData = formData.currentState || formData.desiredEndState || formData.problemStatement;
-    const mode = hasData ? 'revision' : 'new';
-    await designInterview.startInterview(mode);
-    toggleDrawer();
-  }, [formData, designInterview, toggleDrawer]);
-
-  // Listen for interview last message and apply if no active input focus
-  useEffect(() => {
-    if (!designInterview.lastMessage) return;
-    // The interview service sends section updates via WebSocket (design.section_updated)
-    // This effect watches for updates signaled by lastMessage changing
-    // Actual field population is handled server-side via section update events
-  }, [designInterview.lastMessage]);
-
-  // Apply pending interview update when user releases focus
+  // Apply pending update (from SSE refresh) when user releases focus
   const applyPendingUpdate = useCallback(() => {
-    if (pendingInterviewUpdate && !inputFocusedRef.current) {
-      setFormData(pendingInterviewUpdate);
-      setPendingInterviewUpdate(null);
+    if (pendingUpdate && !inputFocusedRef.current) {
+      setFormData(pendingUpdate);
+      setPendingUpdate(null);
       setShowPendingNotice(false);
     }
-  }, [pendingInterviewUpdate]);
+  }, [pendingUpdate]);
 
   useEffect(() => {
-    if (!inputFocusedRef.current && pendingInterviewUpdate) {
+    if (!inputFocusedRef.current && pendingUpdate) {
       applyPendingUpdate();
     }
-  }, [pendingInterviewUpdate, applyPendingUpdate]);
-
-  // Determine if gate should show for this section
-  const showGate = designInterview.awaitingConfirm &&
-    designInterview.interviewState?.currentSection === 'problem-framing';
+  }, [pendingUpdate, applyPendingUpdate]);
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Form */}
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Interview progress indicator — shown when interview is active */}
-        {designInterview.interviewState && (
-          <div className="mb-4">
-            <DesignInterviewProgress interviewState={designInterview.interviewState} />
-          </div>
-        )}
-
-        {/* Header with save status and action buttons */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-gray-200">Problem Framing</h2>
-            {saveStatus === 'saving' && (
-              <span className="text-xs text-amber-400">Saving...</span>
-            )}
-            {saveStatus === 'saved' && (
-              <span className="text-xs text-green-400">Saved</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Participant awareness bar — shown when collaborative interview is active */}
-            {designInterview.isActive && isCollaborative && (
-              <div className="flex items-center gap-1.5 mr-1" title="Active participants">
-                {Array.from(participants.entries()).map(([did, role]) => (
-                  <div key={did} className="flex flex-col items-center" title={role}>
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: getRoleColor(role) }}
-                    />
-                    <span className="text-gray-500" style={{ fontSize: '9px', lineHeight: '1.2' }}>{role}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Guide Me button — pulses when it's this user's turn */}
-            <button
-              onClick={handleGuideMe}
-              disabled={designInterview.isLoading}
-              className={`text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors${isMyTurn ? ' ring-2 ring-blue-400 animate-pulse' : ''}`}
-              title={isMyTurn ? "Ironclaw is directing a question to you" : "Start guided problem framing interview with Ironclaw"}
-            >
-              {isMyTurn ? 'Your Turn' : 'Guide Me'}
-            </button>
-          </div>
+        {/* Header with save status */}
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-lg font-semibold text-gray-200">Problem Framing</h2>
+          {saveStatus === 'saving' && (
+            <span className="text-xs text-amber-400">Saving...</span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="text-xs text-green-400">Saved</span>
+          )}
         </div>
 
-        {/* Pending interview data notice */}
+        {/* Pending update notice (from background SSE refresh) */}
         {showPendingNotice && (
           <div className="mb-4 px-3 py-2 bg-blue-900/30 border border-blue-500/30 rounded text-xs text-blue-300 flex items-center justify-between">
-            <span>New data from interview available</span>
+            <span>New data available from background update</span>
             <button
               onClick={applyPendingUpdate}
               className="text-blue-400 hover:text-blue-300 ml-2 underline"
             >
               Apply
             </button>
-          </div>
-        )}
-
-        {/* Review gate — shown when current section awaits confirmation */}
-        {showGate && designInterview.lastMessage && (
-          <div className="mb-4">
-            <DesignInterviewGate
-              section="problem-framing"
-              summary={designInterview.lastMessage}
-              onConfirm={designInterview.confirmSection}
-              onRevise={(feedback) => {
-                toggleDrawer();
-                designInterview.sendMessage(feedback);
-              }}
-              isLoading={designInterview.isLoading}
-            />
           </div>
         )}
 

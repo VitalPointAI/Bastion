@@ -103,9 +103,6 @@ function normalizeCoGTree(tree: unknown): CoGTreeType {
 
   return { root: null };
 }
-import { useIronclawContext } from '../../context/IronclawContext.tsx';
-import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
-import { DesignInterviewGate } from './DesignInterviewGate.tsx';
 
 export interface CoGAnalysisSectionProps {
   problemSetId: string;
@@ -114,10 +111,7 @@ export interface CoGAnalysisSectionProps {
 }
 
 
-export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGAnalysisSectionProps) {
-  const { toggleDrawer } = useIronclawContext();
-  const designInterview = useDesignInterview(problemSetId);
-  const { participants, isCollaborative } = designInterview;
+export function CoGAnalysisSection({ initialData, onUpdate }: CoGAnalysisSectionProps) {
   const [activeTab, setActiveTab] = useState<'friendly' | 'adversary'>('friendly');
   const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(() => ({
     friendly: normalizeCoGTree(initialData?.friendly),
@@ -171,46 +165,12 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
     [cogAnalysis, scheduleAutoSave]
   );
 
-  // Determine if gate should show for this section
-  const showGate = designInterview.awaitingConfirm &&
-    designInterview.interviewState?.currentSection === 'cog-analysis';
-
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-4">
       {/* Section Header */}
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-semibold text-gray-100">Center of Gravity Analysis</h2>
-        {/* Participant awareness bar — shown when collaborative interview is active */}
-        {designInterview.isActive && isCollaborative && (
-          <div className="flex items-center gap-1.5" title="Active participants">
-            {Array.from(participants.entries()).map(([did, role]) => (
-              <div key={did} className="flex flex-col items-center" title={role}>
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: getRoleColor(role) }}
-                />
-                <span className="text-gray-500" style={{ fontSize: '9px', lineHeight: '1.2' }}>{role}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
-
-      {/* Review gate — shown when CoG section awaits confirmation */}
-      {showGate && designInterview.lastMessage && (
-        <div className="shrink-0">
-          <DesignInterviewGate
-            section="cog-analysis"
-            summary={designInterview.lastMessage}
-            onConfirm={designInterview.confirmSection}
-            onRevise={(feedback) => {
-              toggleDrawer();
-              designInterview.sendMessage(feedback);
-            }}
-            isLoading={designInterview.isLoading}
-          />
-        </div>
-      )}
 
       {/* Friendly / Adversary tabs */}
       <div className="flex items-center gap-1 shrink-0">

@@ -15,10 +15,6 @@ import type {
   CoGNode,
   MapOverlay,
 } from '../../lib/design-service.ts';
-import { useIronclawContext } from '../../context/IronclawContext.tsx';
-import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
-import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
-import { DesignInterviewGate } from './DesignInterviewGate.tsx';
 import { OperationalApproachMapEditor } from './OperationalApproachMapEditor.tsx';
 import { getMapOverlay } from '../../lib/map-overlay-service.ts';
 
@@ -60,9 +56,6 @@ export function OperationalApproachSection({
   designData,
   onUpdate,
 }: OperationalApproachSectionProps) {
-  const { toggleDrawer } = useIronclawContext();
-  const designInterview = useDesignInterview(problemSetId);
-  const { participants, isCollaborative, isMyTurn } = designInterview;
   const [approach, setApproach] = useState<OperationalApproach>(() => ({
     phases: initialData.phases ?? [],
     transitions: initialData.transitions ?? [],
@@ -280,54 +273,9 @@ export function OperationalApproachSection({
   );
   const cvLinkCount = countCVLinks(designData.linesOfEffort ?? []);
 
-  // Determine if gate should show for this section
-  const showGate = designInterview.awaitingConfirm &&
-    designInterview.interviewState?.currentSection === 'operational-approach';
-
-  // When interview is complete, the synthesis narrative arrives via lastMessage
-  // — auto-populate the narrative field if it's empty
-  useEffect(() => {
-    if (
-      designInterview.interviewState?.isComplete &&
-      designInterview.lastMessage &&
-      !approach.narrative
-    ) {
-      updateApproach((prev) => ({ ...prev, narrative: designInterview.lastMessage! }));
-    }
-    // updateApproach is stable (useCallback with [triggerSave])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [designInterview.interviewState?.isComplete, designInterview.lastMessage]);
-
-  // Handle Guide Me button click
-  const handleGuideMe = useCallback(async () => {
-    const hasNarrative = (approach.narrative ?? '').trim().length > 0;
-    const mode = hasNarrative ? 'revision' : 'new';
-    await designInterview.startInterview(mode);
-    toggleDrawer();
-  }, [approach, designInterview, toggleDrawer]);
-
   return (
     <div className="flex gap-0 flex-1 min-h-0 overflow-hidden">
       <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
-      {/* Interview progress indicator — shown when interview is active */}
-      {designInterview.interviewState && (
-        <DesignInterviewProgress interviewState={designInterview.interviewState} />
-      )}
-
-      {/* Review gate — shown when operational approach section awaits confirmation */}
-      {showGate && designInterview.lastMessage && (
-        <DesignInterviewGate
-          section="operational-approach"
-          summary={designInterview.lastMessage}
-          onConfirm={designInterview.confirmSection}
-          onRevise={(feedback) => {
-            toggleDrawer();
-            designInterview.sendMessage(feedback);
-          }}
-          isLoading={designInterview.isLoading}
-        />
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -336,36 +284,11 @@ export function OperationalApproachSection({
             Synthesize problem framing, CoG analysis, and lines of effort into a coherent operational approach.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {saveStatus !== 'idle' && (
-            <span className="text-xs text-gray-500">
-              {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
-            </span>
-          )}
-          {/* Participant awareness bar — shown when collaborative interview is active */}
-          {designInterview.isActive && isCollaborative && (
-            <div className="flex items-center gap-1.5" title="Active participants">
-              {Array.from(participants.entries()).map(([did, role]) => (
-                <div key={did} className="flex flex-col items-center" title={role}>
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: getRoleColor(role) }}
-                  />
-                  <span className="text-gray-500" style={{ fontSize: '9px', lineHeight: '1.2' }}>{role}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {/* Guide Me button — pulses when it's this user's turn */}
-          <button
-            onClick={handleGuideMe}
-            disabled={designInterview.isLoading}
-            className={`text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors${isMyTurn ? ' ring-2 ring-blue-400 animate-pulse' : ''}`}
-            title={isMyTurn ? "Ironclaw is directing a question to you" : "Start guided operational approach interview with Ironclaw"}
-          >
-            {isMyTurn ? 'Your Turn' : 'Guide Me'}
-          </button>
-        </div>
+        {saveStatus !== 'idle' && (
+          <span className="text-xs text-gray-500">
+            {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
+          </span>
+        )}
       </div>
 
       {/* ─── Summary Cards Row ─────────────────────────────────────────────── */}
