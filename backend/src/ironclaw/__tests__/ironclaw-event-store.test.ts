@@ -66,17 +66,21 @@ describe('IronclawEventStore', () => {
   it('append() inserts a row and returns the numeric id', async () => {
     const expectedId = 42;
     mockQuery.mockResolvedValueOnce({ rows: [{ id: expectedId }] });
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // pg_notify call
 
     const payload: AckPayload = { messageId: 'msg-1', threadId: 'thread-1' };
     const id = await store.append('scope-1', 'did:near:user1', IronclawEventType.ack, payload);
 
     expect(id).toBe(expectedId);
-    expect(mockQuery).toHaveBeenCalledOnce();
+    expect(mockQuery).toHaveBeenCalledTimes(2);
     const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('INSERT INTO ironclaw_events');
     expect(params).toContain('scope-1');
     expect(params).toContain('did:near:user1');
     expect(params).toContain(IronclawEventType.ack);
+    // Second call is pg_notify for cross-process relay
+    const [notifySql] = mockQuery.mock.calls[1] as [string];
+    expect(notifySql).toContain('pg_notify');
   });
 
   // Test 2: getEventsSince() returns only events with id > lastId ordered ASC
