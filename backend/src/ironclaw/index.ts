@@ -33,14 +33,25 @@ export { signRequest, verifyRequest } from './hmac-auth.js';
 // ---------------------------------------------------------------------------
 
 import { startConsolidationJob } from './concept-consolidation.js';
+import { routineService } from './routine-service.js';
 
 /**
  * Start background Ironclaw jobs. Called once during application startup.
- * Concept consolidation merges duplicate concept entries learned from chat;
- * it runs independently of the removed BASTION memory stores (which were
- * collapsed into Ironclaw's intrinsic memory system).
+ *  - Concept consolidation merges duplicate concept entries learned from chat.
+ *  - Refines Ironclaw's three installer-created learning routines
+ *    (daily_situation_brief, bastion_knowledge_sync, weekly_capability_update)
+ *    to produce distilled per-problem-set memory with REPLACE semantics instead
+ *    of narrative append. These routines ARE Ironclaw's long-term memory loop —
+ *    we keep them enabled and refine the prompts rather than disable them.
+ *  - Periodic backstop trim enforces path-based size caps on memory_documents
+ *    in case the LLM ignores the prompt-level size limits.
  */
 export function initIronclawBackgroundJobs(): void {
   startConsolidationJob();
-  console.log('[ironclaw] Concept consolidation job started');
+  void routineService.refineIronclawDefaultRoutines();
+
+  setTimeout(() => void routineService.trimOversizedMemoryDocuments(), 30_000);
+  setInterval(() => void routineService.trimOversizedMemoryDocuments(), 6 * 60 * 60 * 1000);
+
+  console.log('[ironclaw] Background jobs started (consolidation + routine refinement + memory trim)');
 }

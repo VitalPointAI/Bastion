@@ -224,6 +224,200 @@ export class RoutineService {
     console.log(`[routine-service] Disabled routine '${name}' for user '${userId}'`);
   }
 
+  /**
+   * Refine Ironclaw's built-in default routines with disciplined prompts.
+   *
+   * Ironclaw's installer creates three routines that are SUPPOSED to be
+   * its long-term learning mechanism (daily brief, knowledge sync, weekly
+   * capability update). By default they produce verbose narratives that
+   * bloat Ironclaw's memory_documents (453KB daily log + 31KB context file)
+   * and pollute every LLM call with cross-exercise content.
+   *
+   * We keep the routines enabled — they ARE how Ironclaw learns — but
+   * rewrite their prompts to enforce:
+   *   1. Distillation over narration. Write lessons, not event logs.
+   *   2. Per-problem-set scoping. Path: problem_sets/<PS-ID>/context.md
+   *      and problem_sets/<PS-ID>/briefs/latest.md
+   *   3. REPLACE not append. Each routine overwrites its canonical file
+   *      instead of accumulating history.
+   *   4. Strict size caps enforced in the prompt + a backstop trim job.
+   *   5. Exit early if nothing material has changed.
+   *
+   * Idempotent — safe to call on every backend startup. Updates the
+   * action_config.description (the LLM prompt) in-place.
+   */
+  async refineIronclawDefaultRoutines(): Promise<void> {
+    const refinements: Array<{ name: string; prompt: string; cronOverride?: string }> = [
+      {
+        name: 'daily_situation_brief',
+        cronOverride: '0 6 * * *', // once per day at 06:00
+        prompt: `Distillation task — produce compact, high-signal briefs per active problem set. Each brief replaces the previous one at a canonical path.
+
+STEPS:
+1. Use bastion category=ops action=list_all to list active problem sets.
+2. For each active problem set, check material changes since the last brief:
+   - New critical OSINT events (skip routine ingestion noise)
+   - PIR state transitions (newly answered / new alerts)
+   - Decision gates needing commander attention
+   - Situation escalation indicators
+3. For each problem set with material changes, write a brief.
+4. Skip problem sets with nothing material.
+
+OUTPUT RULES (strict, enforced by trim job):
+- Path: problem_sets/<PROBLEM_SET_ID>/briefs/latest.md (memory_write, REPLACE semantics)
+- Max 600 chars per brief.
+- One file per problem set. Do NOT write a global daily file.
+- Do NOT narrate OSINT events. Distill to lessons.
+- If NO problem set has material changes, respond "No material changes" and stop. Do not write anything.
+
+FORMAT:
+# <PS name> — <YYYY-MM-DD>
+**Status**: <1 line>
+**Changes**: <bulleted, max 3>
+**Action**: <commander attention required, or "routine">`,
+      },
+      {
+        name: 'bastion_knowledge_sync',
+        cronOverride: '0 */6 * * *', // every 6 hours
+        prompt: `Maintain compact per-problem-set context files that replace prior versions.
+
+STEPS:
+1. Use bastion category=ops action=list_all to get active problem sets.
+2. For each active problem set:
+   - bastion category=ops action=read_problem_set with problem_set_id
+   - bastion category=brain action=stats with problem_set_id
+3. Write a compact context file per problem set.
+
+OUTPUT RULES (strict):
+- Path: problem_sets/<PROBLEM_SET_ID>/context.md (memory_write, REPLACE semantics)
+- Max 1500 chars per file.
+- One file per problem set.
+- Do NOT write narrative summaries, retrospectives, or event logs.
+- Skip problem sets whose underlying data has not changed.
+
+FORMAT:
+# <PS name>
+ID: <PS-...>
+Scenario: <1 sentence summary>
+Focus: <geographic / functional scope>
+Brain slice: <N actors, M relationships>
+Active PIRs: <count>
+Current phase: <short>
+Key actors: <top 5 names, comma-separated>
+Last material change: <YYYY-MM-DD + 1 line>
+
+If nothing has changed across all problem sets, respond "No changes" and stop.`,
+      },
+      {
+        name: 'weekly_capability_update',
+        cronOverride: '0 8 * * 1', // Mondays at 08:00
+        prompt: `Maintain a compact capability reference that replaces prior versions. Do NOT append history.
+
+STEPS:
+1. Use bastion category=admin action=agent_list to get current agent count.
+2. Check skill inventory via the available skills list.
+3. Compare against prior CAPABILITIES.md if it exists.
+
+OUTPUT RULES (strict):
+- Path: CAPABILITIES.md (memory_write, REPLACE semantics — single canonical file)
+- Max 800 chars total.
+- Do NOT list every tool or agent individually.
+- Do NOT narrate historical changes.
+
+FORMAT:
+# BASTION Capabilities (updated: YYYY-MM-DD)
+**Agents**: <count>
+**Tools**: <count> (via bastion category=admin)
+**Skills**: <count>
+**Recent changes**: <bulleted, max 3 one-liners, or "none">
+
+If nothing has changed since last update, respond "No changes" and stop.`,
+      },
+    ];
+
+    try {
+      const pool = getIronclawPool();
+      for (const r of refinements) {
+        // Update action_config.description (the LLM prompt) and optionally
+        // the trigger cron. Keep the routine enabled and preserve
+        // everything else (max_iterations, auto_approve_tools, etc).
+        const newActionConfig = JSON.stringify({
+          title: r.name,
+          description: r.prompt,
+          max_iterations: 5, // tighter than the default 10
+        });
+        const result = r.cronOverride
+          ? await pool.query(
+              `UPDATE routines
+               SET enabled = true,
+                   action_config = $1::jsonb,
+                   trigger_config = jsonb_set(trigger_config, '{schedule}', $2::jsonb),
+                   updated_at = NOW()
+               WHERE name = $3`,
+              [newActionConfig, JSON.stringify(r.cronOverride), r.name],
+            )
+          : await pool.query(
+              `UPDATE routines
+               SET enabled = true,
+                   action_config = $1::jsonb,
+                   updated_at = NOW()
+               WHERE name = $2`,
+              [newActionConfig, r.name],
+            );
+        if (result.rowCount && result.rowCount > 0) {
+          console.log(`[routine-service] Refined routine: ${r.name}`);
+        }
+      }
+    } catch (err) {
+      console.warn(
+        '[routine-service] Failed to refine Ironclaw default routines:',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
+   * Trim oversized memory_documents entries that exceed their expected
+   * budget. Backstop for cases where the LLM ignores prompt size limits.
+   * Runs periodically alongside the routine cleanup job.
+   */
+  async trimOversizedMemoryDocuments(): Promise<void> {
+    // Path → max chars budget. Anything over gets truncated with a marker.
+    const budgets: Array<{ pattern: string; maxChars: number }> = [
+      { pattern: 'daily/%', maxChars: 4000 },
+      { pattern: 'problem_sets/%/briefs/%', maxChars: 1000 },
+      { pattern: 'problem_sets/%/context.md', maxChars: 2000 },
+      { pattern: 'CAPABILITIES.md', maxChars: 1200 },
+      { pattern: 'MEMORY.md', maxChars: 8000 },
+    ];
+    try {
+      const pool = getIronclawPool();
+      let totalTrimmed = 0;
+      for (const b of budgets) {
+        const result = await pool.query(
+          `UPDATE memory_documents
+           SET content = substring(content, 1, $1) || E'\n\n[...truncated by BASTION trim job — exceeded ' || $1 || ' char budget]'
+           WHERE path LIKE $2 AND length(content) > $1`,
+          [b.maxChars, b.pattern],
+        );
+        if (result.rowCount && result.rowCount > 0) {
+          console.log(
+            `[routine-service] Trimmed ${result.rowCount} oversized memory file(s) matching ${b.pattern} (budget: ${b.maxChars} chars)`,
+          );
+          totalTrimmed += result.rowCount;
+        }
+      }
+      if (totalTrimmed === 0) {
+        // Quiet success
+      }
+    } catch (err) {
+      console.warn(
+        '[routine-service] Failed to trim oversized memory documents:',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
   // ─── Knowledge sync (writes files to Ironclaw workspace via webhook) ──────
 
   /**

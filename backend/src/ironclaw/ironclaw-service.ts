@@ -361,27 +361,35 @@ export class IronclawService {
       );
     }
 
-    // 3. Build minimal per-message context for Ironclaw.
+    // 3. Build per-message context for Ironclaw.
     //
-    // TOKEN BUDGET: The full system prompt, user memories, KG context, and
-    // skill inventory are provisioned via identity files (SOUL.md, USER.md,
-    // AGENTS.md, HEARTBEAT.md) that Ironclaw reads ONCE at conversation
-    // start. We do NOT repeat them per-message because Ironclaw's webhook
-    // stores each enriched message in conversation history, and the history
-    // is replayed on every subsequent call — turning a 4KB system prompt
-    // into 400KB after 100 messages. That's what blew past 200k tokens.
+    // TOKEN BUDGET: The system prompt and persistent user identity are
+    // provisioned via USER.md/SOUL.md/HEARTBEAT.md/AGENTS.md which Ironclaw
+    // reads at job start. We do NOT repeat them per-message (that's how we
+    // previously hit 200k tokens — history replay compounding).
     //
-    // Per-message preamble is limited to:
-    //   - Tab-specific guidance (small, context-dependent)
-    //   - Current problem set ID
-    //   - The user's actual message
+    // The per-message preamble DOES include an active problem set briefing
+    // so Ironclaw is unambiguously grounded in the current mission context
+    // on every message. Without this, Ironclaw's responses drift to
+    // whatever's in its memory_documents (which may contain cross-exercise
+    // OSINT noise) and produce mismatched outputs.
     //
-    // Ironclaw can pull fresh memory/KG data via MCP tools on demand.
+    // Budget: ~2000 chars (~500 tokens). Comprised of:
+    //   - Problem set identity block (name, description, problem statement)
+    //   - KG-scoped operational picture (top actors + tensions for this PS)
+    //   - Tab guidance (when applicable)
+    //   - Context line with problem set ID, tab, role
+    const [psBriefing, kgContextBlock] = await Promise.all([
+      this._buildProblemSetBriefing(problemSetId),
+      kgContextService.getContextForMessage(problemSetId, content),
+    ]);
     const tabGuidance = context?.currentTab ? getTabGuidance(context.currentTab, problemSetId) : '';
     const contextLine = context
       ? `[tab=${context.currentTab ?? 'unknown'} ps=${problemSetId} role=${context.userRole ?? 'user'} user_did=${userDid}]`
       : '';
-    const preamble = [contextLine, tabGuidance].filter(Boolean).join('\n');
+    const preamble = [psBriefing, kgContextBlock, tabGuidance, contextLine]
+      .filter(Boolean)
+      .join('\n\n');
     const messageForAi = preamble ? `${preamble}\n\n${content}` : content;
 
     // 4. Send to Ironclaw synchronously (wait_for_response=true).
@@ -1170,6 +1178,73 @@ export class IronclawService {
       memberCount: Array.isArray(team.members) ? team.members.length : 0,
       assignedAt: currentTask.assignedAt,
     };
+  }
+
+  /**
+   * Build a compact active-problem-set briefing for per-message injection.
+   *
+   * Without this, Ironclaw has no way to know what problem set is active
+   * beyond an opaque ID, and its responses drift to whatever's in its
+   * memory_documents (which may contain cross-exercise OSINT noise). The
+   * briefing produces a header block with:
+   *   - Problem set name, description
+   *   - Design problem statement + current state (if defined)
+   *
+   * Budget: ~1500 chars. Pairs with kgContextService which adds ~2000 chars
+   * of KG-scoped operational picture.
+   *
+   * Timeout-protected — returns '' on any failure, never blocks the message.
+   */
+  private async _buildProblemSetBriefing(problemSetId: string): Promise<string> {
+    try {
+      const timeoutPromise = new Promise<string>((resolve) =>
+        setTimeout(() => resolve(''), 300),
+      );
+
+      const buildPromise = (async () => {
+        const [{ problemSetStore }, { designStore }] = await Promise.all([
+          import('../problem-set/problem-set-store.js'),
+          import('../design/design-store.js'),
+        ]);
+
+        const [ps, design] = await Promise.all([
+          problemSetStore.getProblemSet(problemSetId).catch(() => null),
+          designStore.getByProblemSetId(problemSetId).catch(() => null),
+        ]);
+
+        if (!ps) return '';
+
+        const lines: string[] = ['[ACTIVE PROBLEM SET — GROUND ALL ANALYSIS HERE]'];
+        lines.push(`Name: ${ps.name}`);
+        if (ps.description) {
+          const desc = ps.description.length > 400
+            ? ps.description.slice(0, 400) + '...'
+            : ps.description;
+          lines.push(`Scope: ${desc}`);
+        }
+        const problemStatement = design?.problemFraming?.problemStatement || ps.problemStatement;
+        if (problemStatement) {
+          const ps_trunc = problemStatement.length > 400
+            ? problemStatement.slice(0, 400) + '...'
+            : problemStatement;
+          lines.push(`Problem Statement: ${ps_trunc}`);
+        }
+        if (design?.problemFraming?.currentState) {
+          const cs = design.problemFraming.currentState.length > 400
+            ? design.problemFraming.currentState.slice(0, 400) + '...'
+            : design.problemFraming.currentState;
+          lines.push(`Current State: ${cs}`);
+        }
+        lines.push(
+          'DO NOT reference events, actors, or scenarios from other exercises or your memory unless they directly relate to this problem set. If your memory contains cross-exercise content, IGNORE it and query the knowledge graph scoped to this problem set via bastion tools instead.',
+        );
+        return lines.join('\n');
+      })();
+
+      return await Promise.race([buildPromise, timeoutPromise]);
+    } catch {
+      return '';
+    }
   }
 
   /**
