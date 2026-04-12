@@ -21,8 +21,7 @@ import type { TrustDecision } from './ironclaw-types.js';
 import { getTaskStore } from './task-store.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { selfUpdateService } from './self-update-service.js';
-import { memoryRetrievalService } from './ironclaw-memory-service.js';
-import { ironclawUserMemoryStore } from './ironclaw-memory-store.js';
+import { agentConfigStore } from './agent-config-store.js';
 import { autonomousActivityStore } from './autonomous-activity-store.js';
 import { conceptExtractionService } from './concept-extraction.js';
 import { conceptRouter } from './concept-router.js';
@@ -103,61 +102,34 @@ ironclawRouter.get('/greeting', async (req: Request, res: Response) => {
   const problemSetName = (req.query.problemSetName as string) || null;
 
   try {
-    // Check stored honorific preference
-    const stored = await ironclawUserMemoryStore.getUserMemory(userDid, 'honorific_preference');
-    let honorific: string | null = stored?.memory_value?.honorific as string | null ?? null;
-
-    let displayName: string | null = null;
+    // Honorific lives on the AgentConfig record. If set, use it. Otherwise
+    // try to infer from the user's display name or DID, persist the guess,
+    // and let Ironclaw update it naturally from conversation if wrong.
+    const config = await agentConfigStore.getByDid(userDid);
+    let honorific: 'Sir' | "Ma'am" | null = config?.honorific ?? null;
+    const displayName = config?.displayName ?? null;
 
     if (!honorific) {
-      // Try to infer from display name in agent_config (user profile)
-      try {
-        const pool = getPool();
-        const profileResult = await pool.query(
-          `SELECT display_name FROM agent_config
-           WHERE user_did = $1 AND display_name IS NOT NULL
-           LIMIT 1`,
-          [userDid],
-        );
-        if (profileResult.rows.length > 0) {
-          displayName = (profileResult.rows[0].display_name as string) ?? null;
-          if (displayName) {
-            honorific = inferHonorific(displayName);
-          }
-        }
-      } catch {
-        // Profile lookup failed — not critical
-      }
+      const inferred = displayName
+        ? inferHonorific(displayName)
+        : inferHonorific(userDid.replace('did:near:', '').split('.')[0]);
+      // Default to Sir (military convention) if inference is ambiguous
+      honorific = (inferred as 'Sir' | "Ma'am" | null) ?? 'Sir';
 
-      // Also try the DID itself (e.g., did:near:aaron.near)
-      if (!honorific) {
-        const nameFromDid = userDid.replace('did:near:', '').split('.')[0];
-        honorific = inferHonorific(nameFromDid);
-        if (!displayName) displayName = nameFromDid;
+      // Persist the guess so future greetings are consistent. Fire-and-forget.
+      if (config) {
+        agentConfigStore
+          .upsert({ ...config, honorific })
+          .catch((err) => console.warn('[ironclaw-router] honorific persist failed:', err));
       }
     }
 
-    // Build greeting — make an educated guess, seek confirmation only if truly ambiguous
-    let greeting: string;
-    if (honorific) {
-      const greetings = [
-        `${honorific}, Ironclaw standing by. How can I assist?`,
-        `${honorific}, ready to support. What do you need?`,
-        `${honorific}, Ironclaw here. Standing by for your direction.`,
-      ];
-      greeting = greetings[Math.floor(Math.random() * greetings.length)];
-    } else if (displayName) {
-      // We have a name but can't determine gender — default to Sir (military convention) and let them correct
-      honorific = 'Sir';
-      greeting = `${honorific}, Ironclaw standing by. How can I assist?`;
-      // Auto-store the default so we don't keep guessing
-      ironclawUserMemoryStore.setUserMemory(userDid, 'honorific_preference', { honorific }, 'inferred', 0.6).catch(() => {});
-    } else {
-      // No name at all — default to Sir (military convention)
-      honorific = 'Sir';
-      greeting = `${honorific}, Ironclaw standing by. How can I assist?`;
-      ironclawUserMemoryStore.setUserMemory(userDid, 'honorific_preference', { honorific }, 'inferred', 0.6).catch(() => {});
-    }
+    const greetings = [
+      `${honorific}, Ironclaw standing by. How can I assist?`,
+      `${honorific}, ready to support. What do you need?`,
+      `${honorific}, Ironclaw here. Standing by for your direction.`,
+    ];
+    let greeting = greetings[Math.floor(Math.random() * greetings.length)];
 
     // Add context awareness if we know the problem set
     if (problemSetName) {
@@ -174,8 +146,8 @@ ironclawRouter.get('/greeting', async (req: Request, res: Response) => {
 /**
  * POST /honorific
  *
- * Store the user's preferred honorific (Sir/Ma'am).
- * Body: { honorific: 'Sir' | "Ma'am" }
+ * Store the commander's preferred honorific (Sir/Ma'am) on their AgentConfig.
+ * The next identity sync will write it into USER.md so Ironclaw picks it up.
  */
 ironclawRouter.post('/honorific', async (req: Request, res: Response) => {
   const userDid = getUserDid(req);
@@ -187,13 +159,12 @@ ironclawRouter.post('/honorific', async (req: Request, res: Response) => {
   }
 
   try {
-    await ironclawUserMemoryStore.setUserMemory(
-      userDid,
-      'honorific_preference',
-      { honorific },
-      'explicit',
-      1.0,
-    );
+    const config = await agentConfigStore.getByDid(userDid);
+    if (!config) {
+      res.status(404).json({ error: 'Agent config not found for user' });
+      return;
+    }
+    await agentConfigStore.upsert({ ...config, honorific });
     res.json({ ok: true, honorific });
   } catch (err) {
     console.error('[ironclaw-router] Honorific save error:', err);
@@ -478,19 +449,6 @@ ironclawRouter.post(
         decision as TrustDecision,
       );
 
-      // Record outcome for adaptive preference learning (fire-and-forget)
-      if (result.status === 'executed') {
-        const actionType = result.action_card?.action_type ?? result.result?.action_type as string ?? 'unknown';
-        memoryRetrievalService
-          .recordOutcome(userDid, problemSetId, 'suggestion_accepted', { action_type: actionType })
-          .catch((err) => console.error('[ironclaw-memory] outcome record failed:', err));
-      } else if (decision === 'no') {
-        const actionType = result.action_card?.action_type ?? 'unknown';
-        memoryRetrievalService
-          .recordOutcome(userDid, problemSetId, 'suggestion_rejected', { action_type: actionType })
-          .catch((err) => console.error('[ironclaw-memory] outcome record failed:', err));
-      }
-
       // If decision resulted in execution, publish to WebSocket
       if (result.status === 'executed') {
         try {
@@ -587,61 +545,6 @@ ironclawRouter.delete(
     }
   },
 );
-
-// ---------------------------------------------------------------------------
-// Memory Management Endpoints (Plan 03)
-// ---------------------------------------------------------------------------
-
-/**
- * GET /memory
- * List all active memories for the authenticated user.
- */
-ironclawRouter.get('/memory', async (req: Request, res: Response) => {
-  const userDid = getUserDid(req);
-  try {
-    const memories = await ironclawUserMemoryStore.getActiveMemories(userDid);
-    res.json({ memories });
-  } catch (err) {
-    console.error('[ironclaw-router] GET /memory error:', err);
-    res.status(500).json({ error: 'Failed to retrieve memories' });
-  }
-});
-
-/**
- * DELETE /memory/all
- * Delete ALL memories for the authenticated user.
- * Registered BEFORE /memory/:key to avoid Express matching 'all' as a key param.
- */
-ironclawRouter.delete('/memory/all', async (req: Request, res: Response) => {
-  const userDid = getUserDid(req);
-  try {
-    await ironclawUserMemoryStore.deleteAllUserMemories(userDid);
-    res.json({ deleted: 'all' });
-  } catch (err) {
-    console.error('[ironclaw-router] DELETE /memory/all error:', err);
-    res.status(500).json({ error: 'Failed to delete memories' });
-  }
-});
-
-/**
- * DELETE /memory/:key
- * Delete a specific memory entry by key for the authenticated user.
- */
-ironclawRouter.delete('/memory/:key', async (req: Request, res: Response) => {
-  const userDid = getUserDid(req);
-  const memoryKey = req.params.key as string;
-  if (!memoryKey) {
-    res.status(400).json({ error: 'memory key is required' });
-    return;
-  }
-  try {
-    await ironclawUserMemoryStore.deleteUserMemory(userDid, memoryKey);
-    res.json({ deleted: memoryKey });
-  } catch (err) {
-    console.error('[ironclaw-router] DELETE /memory/:key error:', err);
-    res.status(500).json({ error: 'Failed to delete memory' });
-  }
-});
 
 // ---------------------------------------------------------------------------
 // Ironclaw Internal Memory Inspector (visibility into Ironclaw's own
@@ -965,14 +868,7 @@ ironclawRouter.post(
       // 4. Dispatch field write
       await dispatchFieldWrite(problemSetId, targetField, String(fieldValue));
 
-      // 5. Record outcome for adaptive preference learning (fire-and-forget)
-      memoryRetrievalService
-        .recordOutcome(userDid, problemSetId, 'suggestion_accepted', {
-          suggestion_type: targetField,
-        })
-        .catch((err) => console.error('[ironclaw-memory] outcome record failed:', err));
-
-      // 6. Success
+      // 5. Success
       res.json({ applied: true, field: targetField });
     } catch (err) {
       console.error('[ironclaw-router] Suggestion accept error:', err);

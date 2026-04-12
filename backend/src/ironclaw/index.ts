@@ -29,32 +29,18 @@ export { signRequest, verifyRequest } from './hmac-auth.js';
 // NOTE: tool-bridge.ts should import githubService for 'bastion_code_create_pr' actions
 
 // ---------------------------------------------------------------------------
-// Memory lifecycle initialization (Phase 57)
+// Startup initialization
 // ---------------------------------------------------------------------------
 
-import {
-  ironclawUserMemoryStore,
-  ironclawContextMemoryStore,
-  ironclawOutcomeStore,
-} from './ironclaw-memory-store.js';
-import { registerMemoryCleanupJob } from './ironclaw-memory-cleanup.js';
 import { startConsolidationJob } from './concept-consolidation.js';
 
 /**
- * Initialize Ironclaw memory stores and register the daily cleanup job.
- *
- * Call this once during application startup (after database connection is ready).
- * Ensures all three memory tables exist and registers the pg-boss recurring
- * job that deletes expired rows daily at 3am UTC.
- *
- * Safe to call multiple times (ensureTable is idempotent; pg-boss schedule
- * and work registrations are also idempotent).
+ * Start background Ironclaw jobs. Called once during application startup.
+ * Concept consolidation merges duplicate concept entries learned from chat;
+ * it runs independently of the removed BASTION memory stores (which were
+ * collapsed into Ironclaw's intrinsic memory system).
  */
-export async function initIronclawMemory(): Promise<void> {
-  await ironclawUserMemoryStore.ensureTable();
-  await ironclawContextMemoryStore.ensureTable();
-  await ironclawOutcomeStore.ensureTable();
-  await registerMemoryCleanupJob();
+export function initIronclawBackgroundJobs(): void {
   startConsolidationJob();
-  console.log('[ironclaw] Memory stores and consolidation job initialized');
+  console.log('[ironclaw] Concept consolidation job started');
 }

@@ -29,6 +29,7 @@ function rowToAgentConfig(row: Record<string, unknown>): AgentConfig {
     nearAccount: row.near_account as string,
     displayName: (row.display_name as string) ?? '',
     rank: (row.rank as string) ?? '',
+    honorific: (row.honorific as 'Sir' | "Ma'am" | null) ?? null,
     staffSection: (row.staff_section as StaffSection) ?? 'Other',
     position: (row.position as string) ?? '',
     unit: (row.unit as string) ?? '',
@@ -101,6 +102,7 @@ class AgentConfigStore {
         near_account,
         display_name,
         rank,
+        honorific,
         staff_section,
         position,
         unit,
@@ -124,18 +126,19 @@ class AgentConfigStore {
         custom_routines,
         identity_last_synced_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        $10::jsonb, $11::jsonb,
-        $12, $13, $14, $15, $16, $17, $18,
-        $19, $20, $21,
-        $22::jsonb, $23::jsonb,
-        $24, $25::jsonb,
-        $26
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11::jsonb, $12::jsonb,
+        $13, $14, $15, $16, $17, $18, $19,
+        $20, $21, $22,
+        $23::jsonb, $24::jsonb,
+        $25, $26::jsonb,
+        $27
       )
       ON CONFLICT (did) DO UPDATE SET
         near_account                = EXCLUDED.near_account,
         display_name                = EXCLUDED.display_name,
         rank                        = EXCLUDED.rank,
+        honorific                   = EXCLUDED.honorific,
         staff_section               = EXCLUDED.staff_section,
         position                    = EXCLUDED.position,
         unit                        = EXCLUDED.unit,
@@ -163,6 +166,7 @@ class AgentConfigStore {
         config.nearAccount,
         config.displayName,
         config.rank,
+        config.honorific,
         config.staffSection,
         config.position,
         config.unit,
@@ -204,6 +208,7 @@ class AgentConfigStore {
       nearAccount,
       displayName: nearAccount.replace('.near', '').replace(/\./g, ' '),
       rank: '',
+      honorific: null,
       staffSection: 'Other',
       position: '',
       unit: '',

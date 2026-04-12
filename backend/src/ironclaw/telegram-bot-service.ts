@@ -14,7 +14,6 @@
  */
 
 import { ironclawClient } from './ironclaw-client.js';
-import { agentConfigStore } from './agent-config-store.js';
 
 // ---------------------------------------------------------------------------
 // Types

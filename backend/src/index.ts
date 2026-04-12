@@ -52,7 +52,7 @@ import { gateRoutes } from './gates/gate-routes.js';
 import { gateStore } from './gates/gate-store.js';
 import { runMigrations } from './db/migration-runner.js';
 import { aiStaffRouter, aiStaffStore } from './ai-staff/index.js';
-import { ironclawRouter, ironclawStore, initIronclawMemory } from './ironclaw/index.js';
+import { ironclawRouter, ironclawStore, initIronclawBackgroundJobs } from './ironclaw/index.js';
 import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { registerOSINTCleanupJob } from './osint/osint-cleanup-scheduler.js';
@@ -160,7 +160,6 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
     const healthy = await ironclawClient.healthCheck();
 
     let routineCount = 0;
-    let routineNames: string[] = [];
     let activityCount = 0;
     const ironclawDbUrl = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
     if (ironclawDbUrl) {
@@ -173,7 +172,6 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
            FROM routines WHERE enabled = true ORDER BY name`,
         );
         routineCount = rr.rows.length;
-        routineNames = rr.rows.map((r: Record<string, unknown>) => r.name as string);
 
         // Check MCP config
         const mcp = await tmpPool.query<{ value: unknown }>(
@@ -843,11 +841,11 @@ server.listen(port, async () => {
     console.error('Failed to register OSINT cleanup scheduler:', error);
   }
 
-  // Initialize Ironclaw memory stores and daily cleanup job (Phase 57)
+  // Start Ironclaw background jobs (concept consolidation)
   try {
-    await initIronclawMemory();
+    initIronclawBackgroundJobs();
   } catch (error) {
-    console.error('Failed to initialize Ironclaw memory:', error);
+    console.error('Failed to start Ironclaw background jobs:', error);
   }
 
   // Clean up orphaned Ironclaw routine runs from previous container lifecycle.

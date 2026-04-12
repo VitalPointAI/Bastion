@@ -128,21 +128,6 @@ export interface AutonomousActivityEntry {
 }
 
 // ============================================================================
-// User Memory (Plan 03)
-// ============================================================================
-
-export interface IronclawMemoryEntry {
-  id: string;
-  memory_key: string;
-  memory_value: Record<string, unknown>;
-  confidence: number;
-  source: 'inferred' | 'explicit';
-  created_at: string;
-  updated_at: string;
-  expires_at: string;
-}
-
-// ============================================================================
 // SSE Event Types (Phase 67)
 // ============================================================================
 

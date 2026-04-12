@@ -365,6 +365,8 @@ export interface AgentConfig {
   // --- Identity ---
   displayName: string;
   rank: string;
+  /** Honorific Ironclaw addresses the commander with ("Sir" or "Ma'am"). */
+  honorific: 'Sir' | "Ma'am" | null;
   staffSection: StaffSection;
   position: string;
   unit: string;

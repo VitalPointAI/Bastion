@@ -221,8 +221,15 @@ precision, and mission accomplishment are your standards.
  * Blueprint Section 3.1: "Written by Bastion before each job."
  */
 export function renderUserMd(config: AgentConfig): string {
+  // Default to "Sir" if no honorific is set — military convention, and the
+  // commander can correct it at any time (either by saying so in conversation
+  // or via the agent config UI).
+  const honorific = config.honorific ?? 'Sir';
   const lines: string[] = [
     `# USER — Commander Identity`,
+    ``,
+    `## Address`,
+    `Address the commander as **${honorific}** at all times unless explicitly told otherwise.`,
     ``,
     `## Identity`,
     `- **Name / Callsign:** ${config.displayName || '(not set)'}`,

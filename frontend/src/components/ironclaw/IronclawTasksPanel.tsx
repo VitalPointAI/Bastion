@@ -89,15 +89,16 @@ export function IronclawTasksPanel({ problemSetId }: IronclawTasksPanelProps) {
     }
   }, [problemSetId]);
 
+  const hasActiveTask = tasks.some((t) =>
+    ['dispatched', 'agent_working', 'collecting_results'].includes(t.status),
+  );
+
   useEffect(() => {
     fetchTasks();
-    // Poll every 10s for active tasks, 30s otherwise
-    const hasActive = tasks.some((t) =>
-      ['dispatched', 'agent_working', 'collecting_results'].includes(t.status),
-    );
-    const interval = setInterval(fetchTasks, hasActive ? 10_000 : 30_000);
+    // Poll every 10s while any task is active, 30s otherwise
+    const interval = setInterval(fetchTasks, hasActiveTask ? 10_000 : 30_000);
     return () => clearInterval(interval);
-  }, [fetchTasks, tasks.length]);
+  }, [fetchTasks, hasActiveTask]);
 
   if (loading) {
     return (

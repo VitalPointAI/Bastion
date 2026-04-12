@@ -32,7 +32,6 @@ export type {
   SuggestionData,
   IronclawTaskData,
   TrustPreference,
-  IronclawMemoryEntry,
   AutonomousActivityEntry,
   StreamingResponse,
   ToolCallState,

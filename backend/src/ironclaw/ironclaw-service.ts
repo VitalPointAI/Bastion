@@ -27,7 +27,6 @@ import { ironclawEventStore } from './ironclaw-event-store.js';
 import { IronclawEventType } from './ironclaw-event-types.js';
 import type { AckPayload, ResponsePayload, ToolCallPayload, ToolResultPayload, DelegationPayload, ErrorPayload } from './ironclaw-event-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
-import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { kgContextService } from './kg-context-service.js';
 import { conversationCompactionService } from './conversation-compaction-service.js';
 import { agentConfigStore } from './agent-config-store.js';
@@ -971,13 +970,11 @@ export class IronclawService {
       { messageId: userMsg.id } satisfies AckPayload,
     );
 
-    // 3. Inject personalized memory block (timeout-protected, never blocks)
-    // Global messages have no problem set, so KG context is not available
-    const memoryBlock = await memoryRetrievalService.assembleMemoryBlock(userDid, null);
-    const messageForAi = memoryBlock ? `${memoryBlock}\n${content}` : content;
-
-    // 4. Send to Ironclaw webhook
-    const result = await ironclawClient.sendMessage(session.id, messageForAi);
+    // 3. Send to Ironclaw webhook.
+    // No preamble injection for global mode — Ironclaw reads user identity
+    // from USER.md (auto-loaded at job start) and pulls any additional
+    // context on demand via MCP tools.
+    const result = await ironclawClient.sendMessage(session.id, content);
 
     // 5. Process the response (uses global channel)
     if (result.response) {

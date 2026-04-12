@@ -2725,81 +2725,6 @@ const brainGetSliceStats: ActionHandler = async (payload, _userDid) => {
 // Handler registry
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Memory Handlers — user-visible persistent memory (BASTION's own store)
-//
-// Ironclaw has two memory systems: its own private memory_documents (daily
-// logs, narratives) and BASTION's user-facing ironclaw_user_memory table that
-// the Memory tab displays. These handlers let Ironclaw write to the BASTION
-// store so user-facing preferences, behavioral rules, and important facts
-// appear in the Memory tab where the commander can inspect/correct them.
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve the effective user DID from either the handler arg or the payload.
- *
- * Ironclaw's webhook→MCP boundary doesn't propagate user context, so every
- * MCP tool call arrives with userDid='system'. We compensate by having the
- * LLM include user_did in the payload (prompted via the per-message context
- * line "user_did=did:...") and fall back to that when the handler arg is
- * missing real identity.
- */
-function resolveUserDid(payload: Record<string, unknown>, userDid: string): string | null {
-  if (userDid && userDid !== 'system' && userDid !== 'default') return userDid;
-  const fromPayload = payload.user_did as string | undefined;
-  if (fromPayload && fromPayload.startsWith('did:')) return fromPayload;
-  return null;
-}
-
-const memorySet: ActionHandler = async (payload, userDid) => {
-  const key = requireField<string>(payload, 'key');
-  const value = requireField<Record<string, unknown> | string | number | boolean>(payload, 'value');
-  const source = (payload.source as 'inferred' | 'explicit') ?? 'explicit';
-  const confidence = (payload.confidence as number) ?? 0.95;
-
-  const effectiveDid = resolveUserDid(payload, userDid);
-  if (!effectiveDid) {
-    throw new Error('memory.set requires user_did in payload or authenticated context');
-  }
-
-  const { ironclawUserMemoryStore } = await import('./ironclaw-memory-store.js');
-  // Normalize value to Record<string, unknown> since the store requires it
-  const valueObj: Record<string, unknown> =
-    typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? value as Record<string, unknown>
-      : { value };
-
-  await ironclawUserMemoryStore.setUserMemory(effectiveDid, key, valueObj, source, confidence);
-  return { key, status: 'set', source, confidence };
-};
-
-const memoryGet: ActionHandler = async (payload, userDid) => {
-  const effectiveDid = resolveUserDid(payload, userDid);
-  if (!effectiveDid) return { memories: [] };
-  const { ironclawUserMemoryStore } = await import('./ironclaw-memory-store.js');
-  const memories = await ironclawUserMemoryStore.getActiveMemories(effectiveDid);
-  return {
-    memories: memories.map((m) => ({
-      key: m.memory_key,
-      value: m.memory_value,
-      confidence: m.confidence,
-      source: m.source,
-      updated_at: m.updated_at,
-    })),
-  };
-};
-
-const memoryDelete: ActionHandler = async (payload, userDid) => {
-  const key = requireField<string>(payload, 'key');
-  const effectiveDid = resolveUserDid(payload, userDid);
-  if (!effectiveDid) {
-    throw new Error('memory.delete requires user_did in payload or authenticated context');
-  }
-  const { ironclawUserMemoryStore } = await import('./ironclaw-memory-store.js');
-  await ironclawUserMemoryStore.deleteUserMemory(effectiveDid, key);
-  return { key, status: 'deleted' };
-};
-
 /**
  * Maps action type strings to their handler functions.
  */
@@ -2826,10 +2751,6 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'bastion_team_create': teamCreate,
   'bastion_team_add_member': teamAddMember,
   'bastion_team_assign_task': teamAssignTask,
-  // BASTION user-visible memory (Memory tab) — 3 handlers
-  'bastion_memory_set': memorySet,
-  'bastion_memory_get': memoryGet,
-  'bastion_memory_delete': memoryDelete,
   // Design interview (1)
   'design.update_section': designUpdateSection,
   // Map overlay (6)
