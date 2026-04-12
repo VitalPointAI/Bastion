@@ -7,7 +7,6 @@
 
 import type { OperationalDesign, CoGNode } from '../../lib/design-service.ts';
 import { DesignStatusBadge } from './DesignStatusBadge.tsx';
-import { DesignSyncIndicator } from './DesignSyncIndicator.tsx';
 
 interface DesignOverviewProps {
   designData: OperationalDesign;
@@ -193,9 +192,6 @@ export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) 
           Complete each section to develop a coherent design for your problem set.
         </p>
       </div>
-
-      {/* Design Progress + Plan Tab Sync (unified) */}
-      <DesignSyncIndicator status={designData.status} />
 
       {/* Section Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

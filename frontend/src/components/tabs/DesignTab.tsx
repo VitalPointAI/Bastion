@@ -26,17 +26,67 @@ interface DesignTabProps {
   problemSetId: string;
 }
 
+// Plan-tab JPP step mapping — shown as a subtitle under each sidebar item
+// so the commander knows which JPP step each design section feeds into.
+const PLAN_STEP_SUBTITLE: Record<string, string> = {
+  'problem-framing': '→ Step 2: Mission Analysis',
+  'cog-analysis': '→ Step 2: Mission Analysis',
+  'lines-of-effort': '→ Step 3: COA Development',
+  'operational-approach': '→ Step 7: Plan/Order Dev',
+};
+
 function buildSidebarItems(status?: OperationalDesign['status']): SidebarItem[] {
   const getStatus = (key: keyof OperationalDesign['status']): SectionStatus | undefined =>
     status?.[key];
 
   return [
     { id: 'overview', label: 'Overview' },
-    { id: 'problem-framing', label: 'Problem Framing', status: getStatus('problemFraming') },
-    { id: 'cog-analysis', label: 'CoG Analysis', status: getStatus('cogAnalysis') },
-    { id: 'lines-of-effort', label: 'Lines of Effort', status: getStatus('linesOfEffort') },
-    { id: 'operational-approach', label: 'Operational Approach', status: getStatus('operationalApproach') },
+    { id: 'problem-framing', label: 'Problem Framing', status: getStatus('problemFraming'), subtitle: PLAN_STEP_SUBTITLE['problem-framing'] },
+    { id: 'cog-analysis', label: 'CoG Analysis', status: getStatus('cogAnalysis'), subtitle: PLAN_STEP_SUBTITLE['cog-analysis'] },
+    { id: 'lines-of-effort', label: 'Lines of Effort', status: getStatus('linesOfEffort'), subtitle: PLAN_STEP_SUBTITLE['lines-of-effort'] },
+    { id: 'operational-approach', label: 'Operational Approach', status: getStatus('operationalApproach'), subtitle: PLAN_STEP_SUBTITLE['operational-approach'] },
   ];
+}
+
+/**
+ * Compact progress summary rendered in the sidebar header slot.
+ * Shows N/4 complete + a thin progress bar with per-section segments.
+ */
+function DesignProgressHeader({ status }: { status?: OperationalDesign['status'] }) {
+  if (!status) return null;
+  const keys: Array<keyof OperationalDesign['status']> = [
+    'problemFraming',
+    'cogAnalysis',
+    'linesOfEffort',
+    'operationalApproach',
+  ];
+  const completeCount = keys.filter((k) => status[k] === 'complete').length;
+  const colorFor = (s?: SectionStatus) => {
+    if (s === 'complete') return '#34d399';
+    if (s === 'in-progress') return '#fbbf24';
+    return '#374151';
+  };
+  return (
+    <div className="px-3 py-2.5 border-b border-slate-700/60 mb-1">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+          Design Progress
+        </span>
+        <span className="text-[10px] text-slate-500 font-mono">
+          {completeCount}/{keys.length}
+        </span>
+      </div>
+      <div className="flex gap-0.5 h-1 rounded-full overflow-hidden">
+        {keys.map((k) => (
+          <div
+            key={k}
+            className="flex-1 transition-colors duration-300"
+            style={{ backgroundColor: colorFor(status[k]) }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function DesignTab({ problemSetId }: DesignTabProps) {
@@ -109,6 +159,7 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
       items={sidebarItems}
       selectedItem={selectedView}
       onSelectItem={(id) => setSelectedView(id as DesignView)}
+      header={<DesignProgressHeader status={designData?.status} />}
       decisionHistory={
         <DecisionGateTimeline tabId="design" onEntryClick={handleGateDetailClick} />
       }

@@ -7,6 +7,8 @@ export interface SidebarItem {
   label: string;
   tooltip?: string;
   status?: 'not-started' | 'in-progress' | 'complete';
+  /** Optional secondary line shown under the label (e.g., "→ Step 2: Mission Analysis") */
+  subtitle?: string;
 }
 
 export interface TabLayoutProps {
@@ -52,8 +54,15 @@ export function TabLayout({ items, selectedItem, onSelectItem, children, header,
                     onClick={() => onSelectItem(item.id)}
                     title={item.tooltip}
                   >
-                    {item.label}
-                    {item.status !== undefined && <DesignStatusBadge status={item.status} />}
+                    <div className="sidebar-item-row">
+                      <span className="sidebar-item-label">{item.label}</span>
+                      {item.status !== undefined && (
+                        <DesignStatusBadge status={item.status} compact />
+                      )}
+                    </div>
+                    {item.subtitle && (
+                      <span className="sidebar-item-subtitle">{item.subtitle}</span>
+                    )}
                   </button>
                 ))}
               </nav>
