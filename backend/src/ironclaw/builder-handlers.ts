@@ -760,10 +760,11 @@ const designUpdateSection: ActionHandler = async (payload, userDid) => {
     JSON.stringify(payload).slice(0, 3000),
   );
 
+  const { designStore } = await import('../design/design-store.js');
+
   // Normalize CoG analysis data from LLM output into expected tree structure
   if (section === 'cog-analysis') {
     // Preserve existing side when Ironclaw only updates one side
-    const { designStore } = await import('../design/design-store.js');
     const existing = await designStore.getByProblemSetId(problemSetId);
     const normalized = normalizeCoGAnalysis(data);
     const norm = normalized as { friendly: { root: unknown }; adversary: { root: unknown } };
@@ -773,7 +774,28 @@ const designUpdateSection: ActionHandler = async (payload, userDid) => {
     };
   }
 
-  const { designStore } = await import('../design/design-store.js');
+  // Problem framing: merge partial updates with existing data so adding
+  // one field (e.g. desiredEndState) doesn't wipe the others. Accept both
+  // camelCase and snake_case keys from the LLM.
+  if (section === 'problem-framing') {
+    const existing = await designStore.getByProblemSetId(problemSetId);
+    const incoming = data as Record<string, unknown>;
+    const normalized: Record<string, unknown> = {};
+    const keyMap: Record<string, string> = {
+      problem_statement: 'problemStatement',
+      current_state: 'currentState',
+      desired_end_state: 'desiredEndState',
+      key_tensions: 'keyTensions',
+    };
+    for (const [k, v] of Object.entries(incoming)) {
+      normalized[keyMap[k] ?? k] = v;
+    }
+    data = {
+      ...existing.problemFraming,
+      ...normalized,
+    };
+  }
+
   const result = await designStore.updateSection(problemSetId, section, data);
 
   await emitDataUpdated(problemSetId, userDid, 'design', section);

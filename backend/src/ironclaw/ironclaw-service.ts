@@ -96,17 +96,26 @@ function getTabGuidance(tab: string, problemSetId?: string): string {
     case 'cop':
       return '[TAB GUIDANCE: The commander is viewing the Common Operating Picture. Focus on current operations, events, force disposition, and situational awareness. Discuss what is happening NOW — not planning or design.]';
     case 'design':
-      return `[TAB GUIDANCE: The commander is on the Design tab. CRITICAL RULES:
-1. ALWAYS call the bastion tool with category=design, action=update_section to write to the canvas. NEVER output analysis as chat text.
-2. CoG analysis MUST use Strange's doctrinal hierarchy: CoG → CC → CR → CV.
-   Each CC has specific CRs that sustain it. Each CR has specific CVs that threaten it.
-   Structure: { friendly: { cog_statement: "Short CoG name", description: "1-2 sentence explanation",
-   critical_capabilities: [{ label: "Short CC name", description: "explanation",
-   critical_requirements: [{ label: "Short CR name", description: "explanation",
-   critical_vulnerabilities: [{ label: "Short CV name", description: "explanation" }] }] }] } }
-3. EVERY node at EVERY level (CG, CC, CR, CV) MUST have both a short label (3-6 words) AND a separate description (1-2 sentences). The cog_statement is the short label; include a description field alongside it. Never send nodes as plain strings.
-4. After writing, confirm briefly and ask about refinements. The canvas updates in real-time.
-problem_set_id: ${problemSetId ?? 'unknown'}]`;
+      return `[DESIGN TAB — MANDATORY BEHAVIOR]
+
+AUTHORIZATION: The commander's request IS your authorization. When asked to add, create, update, populate, draft, or change ANYTHING on the design canvas, you MUST execute immediately via the bastion tool. Do NOT ask the commander to do it themselves. Do NOT say "the canvas requires your direct action." Do NOT output analysis text and wait for approval. CALL THE TOOL.
+
+REQUIRED TOOL CALL FORMAT:
+{ "tool_call": { "action_type": "bastion", "payload": { "category": "design", "action": "update_section", "problem_set_id": "${problemSetId ?? 'unknown'}", "section": "<SECTION>", "data": { <SECTION_DATA> } } } }
+
+SECTIONS and their data shapes:
+
+• section="problem-framing" → data: { problemStatement, currentState, desiredEndState, keyTensions: [], obstacles: [], opportunities: [], assumptions: [], constraints: [] }. Partial updates are OK — only include fields the commander asked you to add/change. Other fields will be preserved.
+
+• section="cog-analysis" → data: { friendly: { cog_statement, description, critical_capabilities: [{ label, description, critical_requirements: [{ label, description, critical_vulnerabilities: [{ label, description }] }] }] }, adversary: { ... same shape } }. Strange's doctrinal hierarchy: CoG → CC → CR → CV. Every node needs both a short label AND a separate description sentence. Never send nodes as plain strings.
+
+• section="lines-of-effort" → data: array of LOE objects
+
+• section="operational-approach" → data: { phases, transitions, decisionPoints, narrative }
+
+AFTER writing, send a brief chat confirmation (one sentence) and ask if refinements are needed. The canvas updates in real-time via SSE.
+
+DO NOT output the section content as chat text. The canvas shows it.`;
     case 'plan':
       return '[TAB GUIDANCE: The commander is on the Plan tab. Focus on campaign planning, COA development, phasing, and mission orders.]';
     case 'understand':
