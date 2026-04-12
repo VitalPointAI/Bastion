@@ -97,6 +97,15 @@ export const CONSOLIDATED_DISPATCH: Record<string, Record<string, string>> = {
     get_member: 'bastion_personnel_get_member',
     get_clearances: 'bastion_personnel_get_clearances',
   },
+  memory: {
+    // User-visible persistent memory — appears in the Memory tab.
+    // Use this for behavioral rules, preferences, corrections, and facts
+    // the commander wants you to remember across sessions. NOT for per-event
+    // logs or narrative daily summaries.
+    set: 'bastion_memory_set',
+    get: 'bastion_memory_get',
+    delete: 'bastion_memory_delete',
+  },
 };
 
 // Build action enum from all categories
@@ -114,22 +123,22 @@ for (const [cat, actions] of Object.entries(CONSOLIDATED_DISPATCH)) {
 export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
   {
     name: 'bastion',
-    description: 'BASTION C2 platform tool. Specify category.action (e.g. "design.update_section", "graph.search", "intel.web_search"). For CoG analysis: category=design, action=update_section, section=cog-analysis, data={nested CC→CR→CV structure}.',
+    description: 'BASTION C2 platform tool. Specify category.action. Pass problem_set_id for design/intel/brain/ops. For memory (user preferences/rules), category=memory action=set|get|delete. For CoG: category=design action=update_section section=cog-analysis data={nested CC→CR→CV}.',
     inputSchema: {
       type: 'object',
       properties: {
         category: {
           type: 'string',
           enum: Object.keys(CONSOLIDATED_DISPATCH),
-          description: 'Tool category: design, intel, graph, brain, ops, admin, staff',
+          description: 'Tool category: design, intel, graph, brain, ops, admin, staff, memory',
         },
         action: {
           type: 'string',
-          description: 'Action within category (e.g. update_section, search, web_search)',
+          description: 'Action within category (e.g. update_section, search, set, get)',
         },
         problem_set_id: {
           type: 'string',
-          description: 'Problem set ID — REQUIRED for all design/intel/brain/ops operations. Use the ID from the commander\'s current context.',
+          description: 'Problem set ID — REQUIRED for design/intel/brain/ops. NOT required for memory or staff (user-scoped).',
         },
         // Design params
         section: { type: 'string' },
@@ -146,6 +155,11 @@ export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
         // Brain params
         actor_ids: { type: 'array', items: { type: 'string' } },
         reason: { type: 'string' },
+        // Memory params (user-visible persistent memory)
+        key: { type: 'string', description: 'Memory key (snake_case, e.g. working_style, honorific_preference). For category=memory.' },
+        value: { type: 'object', description: 'Memory value — JSON object or primitive. For category=memory action=set.' },
+        source: { type: 'string', enum: ['inferred', 'explicit'], description: 'Memory source: explicit=commander told you, inferred=you deduced it. For category=memory action=set.' },
+        confidence: { type: 'number', description: 'Memory confidence 0-1. For category=memory action=set.' },
         // General params
         id: { type: 'string' },
         type: { type: 'string' },
@@ -157,9 +171,8 @@ export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
         severity: { type: 'string' },
         description: { type: 'string' },
         field: { type: 'string' },
-        value: { type: 'string' },
       },
-      required: ['category', 'action', 'problem_set_id'],
+      required: ['category', 'action'],
     },
     riskLevel: 'medium',
   },

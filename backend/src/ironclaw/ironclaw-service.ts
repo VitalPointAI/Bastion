@@ -380,7 +380,7 @@ export class IronclawService {
     // Ironclaw can pull fresh memory/KG data via MCP tools on demand.
     const tabGuidance = context?.currentTab ? getTabGuidance(context.currentTab, problemSetId) : '';
     const contextLine = context
-      ? `[tab=${context.currentTab ?? 'unknown'} ps=${problemSetId} role=${context.userRole ?? 'user'}]`
+      ? `[tab=${context.currentTab ?? 'unknown'} ps=${problemSetId} role=${context.userRole ?? 'user'} user_did=${userDid}]`
       : '';
     const preamble = [contextLine, tabGuidance].filter(Boolean).join('\n');
     const messageForAi = preamble ? `${preamble}\n\n${content}` : content;

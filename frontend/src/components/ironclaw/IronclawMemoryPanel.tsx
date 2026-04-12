@@ -61,6 +61,19 @@ function formatConfidence(confidence: number): string {
 // ---------------------------------------------------------------------------
 
 export function IronclawMemoryPanel() {
+  return (
+    <div className="flex flex-col gap-4 px-4 py-3">
+      <UserMemorySection />
+      <InternalMemorySection />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// User Memory Section (BASTION's ironclaw_user_memory — the original tab content)
+// ---------------------------------------------------------------------------
+
+function UserMemorySection() {
   const [memories, setMemories] = useState<IronclawMemoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,84 +134,46 @@ export function IronclawMemoryPanel() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Loading state
-  // ---------------------------------------------------------------------------
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-        <svg
-          className="w-5 h-5 animate-spin mb-2 text-slate-500"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        <span className="text-xs">Loading memories...</span>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Empty state
-  // ---------------------------------------------------------------------------
-
-  if (!loading && memories.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-        {/* Brain icon */}
-        <svg
-          className="w-10 h-10 mb-3 text-slate-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-          />
-        </svg>
-        <p className="text-sm text-gray-400 font-medium">No memories yet</p>
-        <p className="text-xs text-gray-500 mt-1 max-w-56 leading-relaxed">
-          Ironclaw hasn't learned about your preferences yet. As you interact, it will
-          remember your working style and preferences.
-        </p>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Memory list
-  // ---------------------------------------------------------------------------
-
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
+    <div className="flex flex-col gap-3">
       {/* Section heading */}
       <div className="flex items-center justify-between">
         <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-          {memories.length} {memories.length === 1 ? 'Memory' : 'Memories'}
+          User Preferences {!loading && `(${memories.length})`}
         </div>
         {memories.length > 0 && (
           <button
             onClick={() => setShowDeleteAllConfirm(true)}
             disabled={deletingAll}
             className="text-[10px] text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
-            title="Delete all memories"
+            title="Delete all user preference memories"
           >
             Delete All
           </button>
         )}
       </div>
 
-      {/* Delete all confirmation */}
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Loading preferences...
+        </div>
+      )}
+
+      {!loading && memories.length === 0 && !error && (
+        <p className="text-xs text-slate-500 py-2">
+          No user preferences recorded yet. Tell Ironclaw what to remember
+          and it will appear here.
+        </p>
+      )}
+
       {showDeleteAllConfirm && (
         <div className="bg-red-900/20 border border-red-700/40 rounded-lg px-3 py-2.5">
           <p className="text-xs text-red-300 mb-2 font-medium">
-            Delete all {memories.length} memories? Ironclaw will start fresh with no knowledge of your preferences.
+            Delete all {memories.length} user preferences?
           </p>
           <div className="flex gap-2">
             <button
@@ -217,7 +192,6 @@ export function IronclawMemoryPanel() {
         </div>
       )}
 
-      {/* Error display */}
       {error && (
         <div className="text-xs text-red-400 bg-red-900/20 border border-red-700/30 rounded px-3 py-2">
           {error}
@@ -230,7 +204,6 @@ export function IronclawMemoryPanel() {
         </div>
       )}
 
-      {/* Memory cards */}
       {memories.map((memory) => (
         <MemoryCard
           key={memory.id}
@@ -351,6 +324,271 @@ function MemoryCard({ memory, isDeleting, onDelete }: MemoryCardProps) {
             ))}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Internal Memory Section (Ironclaw's own memory_documents — auto-loaded
+// files driving per-request token cost)
+// ---------------------------------------------------------------------------
+
+interface InternalMemoryDoc {
+  id: string;
+  path: string;
+  lengthChars: number;
+  estimatedTokens: number;
+  autoLoaded: boolean;
+  preview: string;
+  updatedAt: string;
+}
+
+interface InternalMemoryReport {
+  totalDocuments: number;
+  totalChars: number;
+  estimatedTotalTokens: number;
+  autoLoadedChars: number;
+  autoLoadedTokens: number;
+  documents: InternalMemoryDoc[];
+}
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+function InternalMemorySection() {
+  const [report, setReport] = useState<InternalMemoryReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/ironclaw/internal-memory`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as InternalMemoryReport;
+      setReport(data);
+    } catch (err) {
+      setError((err as Error).message || 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`${API_BASE}/api/ironclaw/internal-memory/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setReport((prev) =>
+        prev ? { ...prev, documents: prev.documents.filter((d) => d.id !== id) } : null,
+      );
+      // Recompute totals locally for instant feedback
+      setReport((prev) => {
+        if (!prev) return null;
+        const remaining = prev.documents;
+        const totalChars = remaining.reduce((s, d) => s + d.lengthChars, 0);
+        const autoLoadedChars = remaining
+          .filter((d) => d.autoLoaded)
+          .reduce((s, d) => s + d.lengthChars, 0);
+        return {
+          ...prev,
+          totalDocuments: remaining.length,
+          totalChars,
+          estimatedTotalTokens: Math.ceil(totalChars / 4),
+          autoLoadedChars,
+          autoLoadedTokens: Math.ceil(autoLoadedChars / 4),
+        };
+      });
+    } catch (err) {
+      setError(`Failed to delete: ${(err as Error).message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handlePurgePrefix(prefix: string) {
+    if (!confirm(`Delete all memory files under "${prefix}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/ironclaw/internal-memory/prefix/${encodeURIComponent(prefix)}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await load();
+    } catch (err) {
+      setError(`Purge failed: ${(err as Error).message}`);
+    }
+  }
+
+  // Format bytes/tokens for display
+  const formatTokens = (n: number): string => {
+    if (n < 1000) return `${n} tokens`;
+    return `${(n / 1000).toFixed(1)}k tokens`;
+  };
+
+  return (
+    <div className="flex flex-col gap-3 pt-3 border-t border-slate-700/60">
+      {/* Section heading */}
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+          Ironclaw Internal Memory
+        </div>
+        <button
+          onClick={() => void load()}
+          className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+          title="Refresh"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <p className="text-[10px] text-slate-500 leading-relaxed">
+        Files Ironclaw stores in its own memory system. Auto-loaded files
+        (marked <span className="text-amber-400">●</span>) are injected into
+        every LLM call and drive per-request token cost.
+      </p>
+
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Inspecting Ironclaw memory...
+        </div>
+      )}
+
+      {error && (
+        <div className="text-xs text-red-400 bg-red-900/20 border border-red-700/30 rounded px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {report && (
+        <>
+          {/* Summary block */}
+          <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg px-3 py-2.5 flex flex-col gap-1.5">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Total documents</span>
+              <span className="text-slate-200 font-mono">{report.totalDocuments}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Total memory cost</span>
+              <span className="text-slate-200 font-mono">
+                {formatTokens(report.estimatedTotalTokens)}
+              </span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Auto-loaded (every request)</span>
+              <span
+                className={`font-mono ${
+                  report.autoLoadedTokens > 5000 ? 'text-amber-400' : 'text-emerald-400'
+                }`}
+              >
+                {formatTokens(report.autoLoadedTokens)}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick actions */}
+          {report.documents.some((d) => d.path.startsWith('daily/')) && (
+            <button
+              onClick={() => void handlePurgePrefix('daily/')}
+              className="text-[10px] text-red-400 hover:text-red-300 underline self-start"
+            >
+              Purge all daily/ logs
+            </button>
+          )}
+
+          {/* Document list */}
+          {report.documents.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">No internal memory files.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {report.documents.map((doc) => {
+                const isExpanded = expandedId === doc.id;
+                const isDeleting = deletingId === doc.id;
+                return (
+                  <div
+                    key={doc.id}
+                    className={`bg-slate-800/60 border border-slate-700/60 rounded-lg px-3 py-2 transition-opacity ${
+                      isDeleting ? 'opacity-40' : 'opacity-100'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {doc.autoLoaded && (
+                            <span
+                              className="text-amber-400 shrink-0"
+                              title="Auto-loaded on every LLM call"
+                            >
+                              ●
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-200 font-mono truncate">
+                            {doc.path}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                          <span className="font-mono">{formatTokens(doc.estimatedTokens)}</span>
+                          <span>·</span>
+                          <span>{relativeTime(doc.updatedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : doc.id)}
+                          className="text-slate-600 hover:text-slate-400 p-1 rounded transition-colors"
+                          title={isExpanded ? 'Collapse' : 'Preview'}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d={isExpanded ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => void handleDelete(doc.id)}
+                          disabled={isDeleting}
+                          className="text-slate-600 hover:text-red-400 disabled:opacity-40 p-1 rounded transition-colors"
+                          title="Delete this memory file"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <pre className="mt-2 pt-2 border-t border-slate-700/50 text-[10px] text-slate-400 font-mono whitespace-pre-wrap wrap-break-word max-h-40 overflow-y-auto">
+                        {doc.preview}
+                        {doc.lengthChars > doc.preview.length && '\n\n…[truncated preview]'}
+                      </pre>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

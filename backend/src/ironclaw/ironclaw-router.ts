@@ -643,6 +643,90 @@ ironclawRouter.delete('/memory/:key', async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Ironclaw Internal Memory Inspector (visibility into Ironclaw's own
+// memory_documents table — auto-loaded files that drive per-request token
+// usage, plus daily logs that may be bloating prompts).
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /internal-memory
+ * Returns a report of Ironclaw's internal memory_documents with sizes,
+ * token estimates, and which files are auto-loaded on every job.
+ */
+ironclawRouter.get('/internal-memory', async (_req: Request, res: Response) => {
+  try {
+    const { ironclawInternalMemoryService } = await import('./ironclaw-internal-memory-service.js');
+    const report = await ironclawInternalMemoryService.inspectMemory();
+    if (!report) {
+      res.status(503).json({ error: 'Ironclaw DB not configured' });
+      return;
+    }
+    res.json(report);
+  } catch (err) {
+    console.error('[ironclaw-router] GET /internal-memory error:', err);
+    res.status(500).json({ error: 'Failed to inspect Ironclaw memory' });
+  }
+});
+
+/**
+ * GET /internal-memory/:id/content
+ * Returns the full content of a single memory document.
+ */
+ironclawRouter.get('/internal-memory/:id/content', async (req: Request, res: Response) => {
+  try {
+    const { ironclawInternalMemoryService } = await import('./ironclaw-internal-memory-service.js');
+    const id = req.params.id as string;
+    const doc = await ironclawInternalMemoryService.getDocumentContent(id);
+    if (!doc) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+    res.json(doc);
+  } catch (err) {
+    console.error('[ironclaw-router] GET /internal-memory/:id/content error:', err);
+    res.status(500).json({ error: 'Failed to fetch memory document' });
+  }
+});
+
+/**
+ * DELETE /internal-memory/:id
+ * Deletes a single memory document by id. Used to free tokens when the
+ * commander spots autonomous routine noise bloating Ironclaw's context.
+ */
+ironclawRouter.delete('/internal-memory/:id', async (req: Request, res: Response) => {
+  try {
+    const { ironclawInternalMemoryService } = await import('./ironclaw-internal-memory-service.js');
+    const id = req.params.id as string;
+    const deleted = await ironclawInternalMemoryService.deleteDocument(id);
+    if (!deleted) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+    res.json({ deleted: id });
+  } catch (err) {
+    console.error('[ironclaw-router] DELETE /internal-memory/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete memory document' });
+  }
+});
+
+/**
+ * DELETE /internal-memory/prefix/:prefix
+ * Deletes all memory documents matching a path prefix (e.g. 'daily/').
+ * Useful for bulk-clearing routine log buildup.
+ */
+ironclawRouter.delete('/internal-memory/prefix/:prefix', async (req: Request, res: Response) => {
+  try {
+    const { ironclawInternalMemoryService } = await import('./ironclaw-internal-memory-service.js');
+    const prefix = req.params.prefix as string;
+    const count = await ironclawInternalMemoryService.deleteByPrefix(prefix);
+    res.json({ deleted: count, prefix });
+  } catch (err) {
+    console.error('[ironclaw-router] DELETE /internal-memory/prefix/:prefix error:', err);
+    res.status(500).json({ error: 'Failed to purge memory documents' });
+  }
+});
+
 /**
  * Extract user role from request attributes (set by zeroTrust middleware).
  */
