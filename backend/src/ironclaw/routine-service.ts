@@ -92,34 +92,28 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     id: 'autonomous_monitoring',
     name: 'Autonomous Operational Monitoring',
     description: 'Proactive Chief of Staff cycle: assess situation, act on findings, alert commanders on what matters.',
-    defaultCron: '*/30 * * * *',  // Every 30 minutes
+    defaultCron: '0 */2 * * *',  // Every 2 hours (was 30 min — too noisy)
     editable: true,
     category: 'monitoring',
-    prompt: `You are the Chief of Staff. This is your autonomous monitoring cycle. Your job is not just to observe — it is to ACT on what you find and keep the commander informed.
+    prompt: `Autonomous monitoring cycle. Be terse and surgical.
 
-PHASE 1 — ASSESS the operational environment:
-- Scan for contradictions in the knowledge graph
-- Identify intelligence gaps
-- Check PIR/IR status for anything newly answerable
-- Evaluate whether the situation has materially changed
+ASSESS (concise):
+- Check for critical graph contradictions
+- Check for newly-answerable PIRs
+- Check for material situation changes
 
-PHASE 2 — ACT on your findings (this is the critical part):
-- For the highest-priority intelligence gaps: research them NOW using web search, then ingest the results as research events
-- For any PIR/IR that can be answered by new data: answer them
-- For significant developments: draft a situation assessment
-- If you discover something that should be tracked but no PIR exists: create one
-- If you find conflicts in the knowledge graph: log them with urgency so commanders are aware
+ACT (only on the 1-2 most important findings):
+- Answer PIRs that have new data
+- Create alert via bastion category=ops action=send_alert for urgent findings ONLY
 
-PHASE 3 — REPORT:
-- Log a summary of what you found AND what you did about it
-- For urgent or critical findings: send an alert so commanders are notified immediately
-- Be specific — "215 gaps identified" is useless; "Researched top 3 gaps on [topic], ingested findings, 2 PIRs answerable" is actionable
-
-CONSTRAINTS:
-- Do NOT invent tool names. Use only tools available via your MCP server (bastion-core).
-- Always pass problem_set_id when tools require it.
-- Prioritize ruthlessly — you have limited iterations. Act on the 2-3 most important things, not everything.
-- If a previous cycle already addressed something and nothing has changed, skip it.`,
+CRITICAL CONSTRAINTS — STRICTLY ENFORCED:
+- DO NOT use memory_write, memory_read, or any memory_* tool
+- DO NOT write daily logs or narratives
+- DO NOT log per-event analysis
+- Use bastion category=ops action=log_activity for brief activity entries (max 1 per cycle, under 200 chars)
+- Max 3 tool calls per cycle — prioritize ruthlessly
+- Response must be under 500 characters total
+- If nothing material changed, respond with "No action required." and stop.`,
   },
 ];
 
@@ -432,7 +426,7 @@ ${membershipList}
    *                       Minimum interval is 15 minutes; violating crons are clamped.
    */
   async registerAutonomousMonitoring(problemSetId: string, cronOverride?: string): Promise<void> {
-    const DEFAULT_CRON = '*/30 * * * *';   // every 30 minutes
+    const DEFAULT_CRON = '0 */2 * * *';    // every 2 hours (token budget control)
     const MIN_CRON = '*/15 * * * *';       // minimum 15 minutes
     let cron = cronOverride ?? DEFAULT_CRON;
 
@@ -457,27 +451,25 @@ ${membershipList}
         description: `Autonomous operational monitoring for problem set ${problemSetId}. Checks for contradictions, intelligence gaps, unanswered PIRs, and situation changes.`,
         userId: 'default',
         cron,
-        prompt: `You are the Chief of Staff. This is your autonomous monitoring cycle for problem set ${problemSetId}. Your job is not just to observe — it is to ACT on what you find and keep the commander informed.
+        prompt: `Autonomous monitoring cycle for problem_set_id="${problemSetId}". Be terse and surgical.
 
-PHASE 1 — ASSESS: Scan this problem set for contradictions, intelligence gaps, PIR/IR status, and situation changes. Always pass problem_set_id: "${problemSetId}".
+ASSESS (concise):
+- Check graph contradictions and newly-answerable PIRs for this problem set only
+- Check for material situation changes
 
-PHASE 2 — ACT on your most important findings:
-- Research the highest-priority intelligence gaps using web search, then ingest results as research events
-- Answer any PIR/IR that new data can satisfy
-- If significant developments warrant it, draft a situation assessment
-- Create PIRs for important developments that aren't being tracked
-- Curate the brain: evaluate relevance of global graph entities, augment the slice with discoveries, prune stale entries
+ACT (only the 1-2 most important findings):
+- Answer PIRs with new data
+- Create alert via bastion category=ops action=send_alert for urgent findings ONLY
 
-PHASE 3 — REPORT what you found AND what you did:
-- Log a summary via activity logging with problem_set_id "${problemSetId}"
-- Send alerts for urgent/critical findings so commanders are notified immediately
-- Be specific about actions taken, not just observations
-
-CONSTRAINTS:
-- Use only tools available via your MCP server (bastion-core). Do NOT invent tool names.
-- Prioritize ruthlessly — act on the 2-3 most important things, not everything.
-- If nothing has materially changed since your last cycle, say so briefly and move on.`,
-        cooldownSecs: 900, // 15-minute cooldown minimum
+CRITICAL CONSTRAINTS — STRICTLY ENFORCED:
+- DO NOT use memory_write, memory_read, or any memory_* tool
+- DO NOT write daily logs or narratives
+- DO NOT log per-event analysis
+- Use bastion category=ops action=log_activity for brief entries (max 1 per cycle, under 200 chars, always include problem_set_id="${problemSetId}")
+- Max 3 tool calls per cycle
+- Response must be under 500 characters total
+- If nothing material changed, respond with "No action required." and stop.`,
+        cooldownSecs: 7200, // 2-hour cooldown (token budget control)
       });
       console.log(`[routine-service] Registered autonomous monitoring for problem set ${problemSetId} (${cron})`);
     } catch (err) {

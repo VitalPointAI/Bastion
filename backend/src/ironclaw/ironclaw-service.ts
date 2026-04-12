@@ -28,7 +28,6 @@ import { IronclawEventType } from './ironclaw-event-types.js';
 import type { AckPayload, ResponsePayload, ToolCallPayload, ToolResultPayload, DelegationPayload, ErrorPayload } from './ironclaw-event-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
-import { conceptRetrievalService } from './concept-retrieval.js';
 import { kgContextService } from './kg-context-service.js';
 import { agentConfigStore } from './agent-config-store.js';
 import {
@@ -353,30 +352,28 @@ export class IronclawService {
       );
     }
 
-    // 3. Build context-prefixed message for Ironclaw (if context provided)
-    // The prefix helps Ironclaw tailor responses to the current UI state.
-    // The original content is persisted; only the enriched version is sent to the AI.
+    // 3. Build minimal per-message context for Ironclaw.
+    //
+    // TOKEN BUDGET: The full system prompt, user memories, KG context, and
+    // skill inventory are provisioned via identity files (SOUL.md, USER.md,
+    // AGENTS.md, HEARTBEAT.md) that Ironclaw reads ONCE at conversation
+    // start. We do NOT repeat them per-message because Ironclaw's webhook
+    // stores each enriched message in conversation history, and the history
+    // is replayed on every subsequent call — turning a 4KB system prompt
+    // into 400KB after 100 messages. That's what blew past 200k tokens.
+    //
+    // Per-message preamble is limited to:
+    //   - Tab-specific guidance (small, context-dependent)
+    //   - Current problem set ID
+    //   - The user's actual message
+    //
+    // Ironclaw can pull fresh memory/KG data via MCP tools on demand.
     const tabGuidance = context?.currentTab ? getTabGuidance(context.currentTab, problemSetId) : '';
-    const contextPrefix = context
-      ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]${tabGuidance ? `\n${tabGuidance}` : ''}`
+    const contextLine = context
+      ? `[tab=${context.currentTab ?? 'unknown'} ps=${problemSetId} role=${context.userRole ?? 'user'}]`
       : '';
-    // Inject system prompt + personalized memory + KG context + skill inventory in parallel
-    // All timeout-protected — never block message flow
-    const [memoryBlock, kgContextBlock, skillBlock, conceptBlock] = await Promise.all([
-      memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId),
-      kgContextService.getContextForMessage(problemSetId, content),
-      this._assembleSkillInventory(),
-      conceptRetrievalService.getLearnedContextBlock(userDid, problemSetId, content, 400),
-    ]);
-    // Build system prompt with current skill inventory
-    const systemPrompt = this.buildSystemPrompt(problemSetId, {
-      availableSkills: await this._getAvailableSkillsList(),
-    });
-    const preamble = [
-      `[SYSTEM INSTRUCTIONS]\n${systemPrompt}\n[/SYSTEM INSTRUCTIONS]`,
-      memoryBlock, conceptBlock, kgContextBlock, skillBlock, contextPrefix,
-    ].filter(Boolean).join('\n');
-    const messageForAi = preamble ? `${preamble}\n${content}` : content;
+    const preamble = [contextLine, tabGuidance].filter(Boolean).join('\n');
+    const messageForAi = preamble ? `${preamble}\n\n${content}` : content;
 
     // 4. Send to Ironclaw synchronously (wait_for_response=true).
     //    The async poll approach broke with Ironclaw v0.24 which no longer
