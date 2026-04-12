@@ -732,13 +732,13 @@ const designUpdateSection: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const section = requireField<string>(payload, 'section');
 
-  // Block autonomous/routine writes to design sections — design data should
-  // only be modified when a user explicitly directs Ironclaw to do so.
-  const isAutonomous = !userDid || userDid === 'system' || userDid === 'default';
-  if (isAutonomous) {
-    console.warn(`[designUpdateSection] Blocked autonomous write to ${section} (userDid=${userDid})`);
-    return { problemSetId, section, status: 'blocked', reason: 'Design sections require user-directed action' };
-  }
+  // NOTE: We can't distinguish user-initiated MCP calls from routine calls
+  // at the handler level — both arrive with userDid='system' because Ironclaw
+  // doesn't propagate the original user context through the webhook→MCP
+  // boundary. Autonomous routine pollution of design sections is prevented
+  // at the prompt level instead: routine-service.ts prompts only expose the
+  // ops category (log_activity, send_alert) and explicitly forbid design
+  // tools. Any call that reaches this handler is treated as user-directed.
 
   let data = (payload.data ?? {}) as Record<string, unknown>;
 

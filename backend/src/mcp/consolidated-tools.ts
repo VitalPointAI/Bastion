@@ -127,7 +127,10 @@ export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
           type: 'string',
           description: 'Action within category (e.g. update_section, search, web_search)',
         },
-        problem_set_id: { type: 'string' },
+        problem_set_id: {
+          type: 'string',
+          description: 'Problem set ID — REQUIRED for all design/intel/brain/ops operations. Use the ID from the commander\'s current context.',
+        },
         // Design params
         section: { type: 'string' },
         data: { type: 'object' },
@@ -156,7 +159,7 @@ export const CONSOLIDATED_TOOLS: MCPToolDefinition[] = [
         field: { type: 'string' },
         value: { type: 'string' },
       },
-      required: ['category', 'action'],
+      required: ['category', 'action', 'problem_set_id'],
     },
     riskLevel: 'medium',
   },
