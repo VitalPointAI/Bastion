@@ -31,6 +31,12 @@ export class IronclawEventStore {
    */
   private clients = new Map<string, Set<Response>>();
 
+  /**
+   * Track event IDs emitted locally so the NOTIFY relay doesn't re-emit them.
+   * Bounded LRU — only keeps the last 1000 IDs.
+   */
+  private locallyEmittedIds = new Set<number>();
+
   // -------------------------------------------------------------------------
   // Table lifecycle
   // -------------------------------------------------------------------------
@@ -81,6 +87,13 @@ export class IronclawEventStore {
       [scopeId, userDid, threadId ?? null, eventType, JSON.stringify(payload)],
     );
     const id = result.rows[0].id;
+    // Mark as locally emitted BEFORE calling emit so the NOTIFY relay skips it
+    this.locallyEmittedIds.add(id);
+    if (this.locallyEmittedIds.size > 1000) {
+      // Trim oldest half to bound memory
+      const toKeep = Array.from(this.locallyEmittedIds).slice(-500);
+      this.locallyEmittedIds = new Set(toKeep);
+    }
     this.emit(scopeId, eventType, payload, id);
 
     // Notify other processes (e.g. bastion-mcp → bastion-backend) via pg NOTIFY
@@ -108,8 +121,9 @@ export class IronclawEventStore {
       if (msg.channel !== 'ironclaw_event' || !msg.payload) return;
       try {
         const { id, scopeId, eventType, payload } = JSON.parse(msg.payload);
+        // Skip if this event was emitted locally (same process that wrote it)
+        if (this.locallyEmittedIds.has(id)) return;
         // Only emit if we have local SSE clients for this scope
-        // (avoids duplicate emission in the process that wrote the event)
         const clientSet = this.clients.get(scopeId);
         if (clientSet && clientSet.size > 0) {
           this.emit(scopeId, eventType, payload, id);

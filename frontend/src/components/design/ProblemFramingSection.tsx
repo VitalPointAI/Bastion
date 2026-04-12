@@ -82,12 +82,24 @@ function ContentField({
       {viewMode === 'rich' && value && !isEditing ? (
         <div
           onClick={handleRichClick}
-          className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm
-            cursor-text min-h-[60px] prose prose-sm prose-invert max-w-none
-            prose-p:my-3 prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2 prose-strong:text-blue-300
-            prose-headings:mt-4 prose-headings:mb-2 hover:border-blue-500/50 transition-colors"
+          className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-3 text-sm
+            cursor-text min-h-[60px] max-w-none space-y-3 hover:border-blue-500/50 transition-colors"
         >
-          <Markdown>{(value ?? '').replace(/\n(?!\n)/g, '  \n')}</Markdown>
+          <Markdown
+            components={{
+              // Render headings as bold paragraphs instead of large titles
+              h1: ({ children }) => <p className="font-semibold text-blue-300">{children}</p>,
+              h2: ({ children }) => <p className="font-semibold text-blue-300">{children}</p>,
+              h3: ({ children }) => <p className="font-semibold text-blue-300">{children}</p>,
+              h4: ({ children }) => <p className="font-semibold text-blue-300">{children}</p>,
+              p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+              strong: ({ children }) => <strong className="text-blue-300">{children}</strong>,
+              ul: ({ children }) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1">{children}</ol>,
+            }}
+          >
+            {(value ?? '').replace(/\n(?!\n)/g, '  \n')}
+          </Markdown>
         </div>
       ) : (
         <AutoTextarea
