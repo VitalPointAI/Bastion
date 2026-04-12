@@ -1468,3 +1468,22 @@ ironclawEventStore.ensureTable()
   .catch((err) =>
     console.error('[ironclaw-router] Failed to initialize ironclaw_events:', err),
   );
+
+// ---------------------------------------------------------------------------
+// Startup + periodic: purge old autonomous routine messages from Ironclaw's
+// conversation history. Routines don't need continuity between runs, so old
+// messages would accumulate forever and inflate context on every routine cycle.
+// Runs once on startup and every 6 hours thereafter.
+// ---------------------------------------------------------------------------
+import('./conversation-compaction-service.js').then(({ conversationCompactionService }) => {
+  // Initial purge on startup (delayed 30s so DB is ready)
+  setTimeout(() => {
+    void conversationCompactionService.purgeOldRoutineMessages();
+  }, 30_000);
+  // Periodic purge every 6 hours
+  setInterval(() => {
+    void conversationCompactionService.purgeOldRoutineMessages();
+  }, 6 * 60 * 60 * 1000);
+}).catch((err) =>
+  console.warn('[ironclaw-router] Failed to schedule routine purge:', err),
+);

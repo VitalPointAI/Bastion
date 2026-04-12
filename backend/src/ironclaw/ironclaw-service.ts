@@ -29,6 +29,7 @@ import type { AckPayload, ResponsePayload, ToolCallPayload, ToolResultPayload, D
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { kgContextService } from './kg-context-service.js';
+import { conversationCompactionService } from './conversation-compaction-service.js';
 import { agentConfigStore } from './agent-config-store.js';
 import {
   renderUserMd,
@@ -386,6 +387,14 @@ export class IronclawService {
     if (response) {
       await this.processResponse(problemSetId, userDid, response, threadId);
     }
+
+    // 6. Fire-and-forget conversation compaction. Keeps Ironclaw's internal
+    //    history bounded so the next call doesn't replay 200k tokens of
+    //    accumulated messages. Runs after the response so the user isn't
+    //    delayed by the summarizer call.
+    conversationCompactionService.compactIfNeeded('default').catch((err) =>
+      console.warn('[ironclaw-service] Post-message compaction failed:', err),
+    );
   }
 
   /**
