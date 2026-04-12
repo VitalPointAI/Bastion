@@ -731,6 +731,15 @@ function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unk
 const designUpdateSection: ActionHandler = async (payload, userDid) => {
   const problemSetId = requireField<string>(payload, 'problem_set_id');
   const section = requireField<string>(payload, 'section');
+
+  // Block autonomous/routine writes to design sections — design data should
+  // only be modified when a user explicitly directs Ironclaw to do so.
+  const isAutonomous = !userDid || userDid === 'system' || userDid === 'default';
+  if (isAutonomous) {
+    console.warn(`[designUpdateSection] Blocked autonomous write to ${section} (userDid=${userDid})`);
+    return { problemSetId, section, status: 'blocked', reason: 'Design sections require user-directed action' };
+  }
+
   let data = (payload.data ?? {}) as Record<string, unknown>;
 
   // LLMs often put section content at the top level of the payload instead of
