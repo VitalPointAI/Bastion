@@ -100,10 +100,11 @@ function getTabGuidance(tab: string, problemSetId?: string): string {
 1. ALWAYS call the bastion tool with category=design, action=update_section to write to the canvas. NEVER output analysis as chat text.
 2. CoG analysis MUST use Strange's doctrinal hierarchy: CoG → CC → CR → CV.
    Each CC has specific CRs that sustain it. Each CR has specific CVs that threaten it.
-   Structure the data field as nested: { friendly: { cog_statement: "...",
-   critical_capabilities: [{ label, description, critical_requirements: [{ label, description,
-   critical_vulnerabilities: [{ label, description }] }] }] } }
-3. EVERY node (CC, CR, CV) MUST have both a short label (3-6 words) AND a description (1-2 sentences explaining the significance). Never send nodes as plain strings — always {label, description} objects.
+   Structure: { friendly: { cog_statement: "Short CoG name", description: "1-2 sentence explanation",
+   critical_capabilities: [{ label: "Short CC name", description: "explanation",
+   critical_requirements: [{ label: "Short CR name", description: "explanation",
+   critical_vulnerabilities: [{ label: "Short CV name", description: "explanation" }] }] }] } }
+3. EVERY node at EVERY level (CG, CC, CR, CV) MUST have both a short label (3-6 words) AND a separate description (1-2 sentences). The cog_statement is the short label; include a description field alongside it. Never send nodes as plain strings.
 4. After writing, confirm briefly and ask about refinements. The canvas updates in real-time.
 problem_set_id: ${problemSetId ?? 'unknown'}]`;
     case 'plan':

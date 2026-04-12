@@ -668,7 +668,17 @@ function normalizeCoGAnalysis(data: Record<string, unknown>): Record<string, unk
   }
 
   function buildFromFlatFields(side: Record<string, unknown>, cogLabel: string): Record<string, unknown> {
-    const cogDescription = (side.description as string) ?? (side.cog_description as string) ?? '';
+    let cogDescription = (side.description as string) ?? (side.cog_description as string) ?? (side.cogDescription as string) ?? '';
+
+    // If the CoG label is a long sentence with no separate description,
+    // split at the first delimiter (— , - , : ) to create a short label + description
+    if (cogDescription === '' && cogLabel.length > 60) {
+      const splitMatch = cogLabel.match(/^(.{15,60}?)(?:\s*[—–\-:]\s*|\.\s+)(.+)$/);
+      if (splitMatch) {
+        cogDescription = splitMatch[2].trim();
+        cogLabel = splitMatch[1].trim();
+      }
+    }
 
     // Collect CC, CR, CV arrays — LLM uses both "capabilities" and "components"
     const ccArray = (side.critical_capabilities as unknown[]) ?? (side.criticalCapabilities as unknown[]) ?? (side.critical_components as unknown[]) ?? (side.criticalComponents as unknown[]) ?? (side.cc as unknown[]) ?? [];
