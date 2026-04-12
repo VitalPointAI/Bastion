@@ -1463,6 +1463,8 @@ ironclawRouter.post('/:problemSetId/extract', async (req: Request, res: Response
 // ---------------------------------------------------------------------------
 // Startup: ensure ironclaw_events table exists (Phase 67)
 // ---------------------------------------------------------------------------
-ironclawEventStore.ensureTable().catch((err) =>
-  console.error('[ironclaw-router] Failed to ensure ironclaw_events table:', err),
-);
+ironclawEventStore.ensureTable()
+  .then(() => ironclawEventStore.startListening())
+  .catch((err) =>
+    console.error('[ironclaw-router] Failed to initialize ironclaw_events:', err),
+  );

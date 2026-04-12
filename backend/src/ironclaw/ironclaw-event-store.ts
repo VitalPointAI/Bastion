@@ -82,7 +82,43 @@ export class IronclawEventStore {
     );
     const id = result.rows[0].id;
     this.emit(scopeId, eventType, payload, id);
+
+    // Notify other processes (e.g. bastion-mcp → bastion-backend) via pg NOTIFY
+    // so they can relay to their own in-memory SSE clients.
+    try {
+      const notification = JSON.stringify({ id, scopeId, eventType, payload });
+      await pool.query('SELECT pg_notify($1, $2)', ['ironclaw_event', notification]);
+    } catch {
+      // Non-critical — local emit already handled above
+    }
+
     return id;
+  }
+
+  /**
+   * Subscribe to PostgreSQL NOTIFY channel for cross-process SSE relay.
+   * When another process (e.g. bastion-mcp) inserts an event, this process
+   * receives the notification and pushes it to its local SSE clients.
+   */
+  async startListening(): Promise<void> {
+    const pool = getPool();
+    const client = await pool.connect();
+    await client.query('LISTEN ironclaw_event');
+    client.on('notification', (msg) => {
+      if (msg.channel !== 'ironclaw_event' || !msg.payload) return;
+      try {
+        const { id, scopeId, eventType, payload } = JSON.parse(msg.payload);
+        // Only emit if we have local SSE clients for this scope
+        // (avoids duplicate emission in the process that wrote the event)
+        const clientSet = this.clients.get(scopeId);
+        if (clientSet && clientSet.size > 0) {
+          this.emit(scopeId, eventType, payload, id);
+        }
+      } catch {
+        // Malformed notification — ignore
+      }
+    });
+    console.log('[IronclawEventStore] Listening for cross-process SSE relay via pg NOTIFY');
   }
 
   // -------------------------------------------------------------------------
