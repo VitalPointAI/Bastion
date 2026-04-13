@@ -249,6 +249,9 @@ export class IronclawService {
         routineService.registerAutonomousMonitoring(psId, cronOverride).catch((err) =>
           console.error(`[ironclaw-service] Autonomous monitoring registration failed for ${psId}:`, err),
         );
+        routineService.registerBrainCurator(psId).catch((err) =>
+          console.error(`[ironclaw-service] Brain curator registration failed for ${psId}:`, err),
+        );
       }
     }
   }

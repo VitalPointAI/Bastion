@@ -27,6 +27,7 @@ import { ScenarioStore } from '../exercise/scenario-store.js';
 import { PositionStore, initPositionTables } from '../exercise/position-store.js';
 import { modeMiddleware } from '../middleware/mode-context.js';
 import { inheritanceService } from '../inheritance/inheritance-service.js';
+import { routineService } from '../ironclaw/routine-service.js';
 
 const DAO_CONTRACT_ID = process.env.DAO_CONTRACT_ID || 'dao-registry.testnet';
 const scenarioStore = new ScenarioStore();
@@ -359,6 +360,15 @@ router.post('/', requireAuth, modeMiddleware, async (req: Request, res: Response
       txHash,
     );
 
+    // Auto-register Ironclaw routines for the new PS (watcher + brain curator).
+    // Fire-and-forget so PS creation never blocks on Ironclaw DB writes.
+    routineService.registerAutonomousMonitoring(problemSet.id).catch((err) =>
+      console.warn(`[problem-sets] autonomous monitoring registration failed for ${problemSet.id}:`, err instanceof Error ? err.message : err),
+    );
+    routineService.registerBrainCurator(problemSet.id).catch((err) =>
+      console.warn(`[problem-sets] brain curator registration failed for ${problemSet.id}:`, err instanceof Error ? err.message : err),
+    );
+
     console.log(`Problem set created: ${problemSet.id} (DAO: ${problemSet.daoId})`);
     res.status(201).json(problemSet);
   } catch (error) {
@@ -450,6 +460,14 @@ router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, 
 
     // Link scenario to the newly created problem set
     await scenarioStore.updateProblemSetLink(body.scenarioId, problemSet.id);
+
+    // Auto-register Ironclaw routines for the new PS (watcher + brain curator).
+    routineService.registerAutonomousMonitoring(problemSet.id).catch((err) =>
+      console.warn(`[problem-sets] autonomous monitoring registration failed for ${problemSet.id}:`, err instanceof Error ? err.message : err),
+    );
+    routineService.registerBrainCurator(problemSet.id).catch((err) =>
+      console.warn(`[problem-sets] brain curator registration failed for ${problemSet.id}:`, err instanceof Error ? err.message : err),
+    );
 
     console.log(`Training problem set created from scenario: ${problemSet.id} (scenario: ${scenario.id})`);
     res.status(201).json(problemSet);

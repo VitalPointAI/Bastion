@@ -696,6 +696,149 @@ CRITICAL CONSTRAINTS — STRICTLY ENFORCED:
   }
 
   /**
+   * Register the brain slice curator routine for a specific problem set.
+   *
+   * COMPLEMENT to autonomous_monitoring (the watcher). Where the watcher
+   * surfaces contradictions / answers PIRs / sends alerts, the curator
+   * grows and prunes the PS brain slice from the global KG so the watcher
+   * (and Ironclaw chat answers) have something to read.
+   *
+   * Cycle (each fire):
+   *   1. Read PS scope fingerprint (geographic, actors, temporal, core problem)
+   *      from problem_set_context (scoping interview output).
+   *   2. Relevance sweep — bastion brain evaluate_relevance + augment_slice
+   *      to pull in-scope global-KG actors that aren't yet sliced.
+   *   3. Gap detection — bastion brain intelligence_gaps + active PIRs.
+   *   4. Targeted collection — bastion intel web_search using the fingerprint
+   *      + top gap topics; create research events.
+   *   5. Ingest — bastion intel process_osint_event to RAFT-extract.
+   *   6. Re-sweep — pull newly-extracted entities into the slice.
+   *   7. Prune — bastion brain prune_slice for stale/orphan/out-of-scope.
+   *   8. Log a one-line activity entry.
+   *
+   * The curator must NOT call memory_write — its job is graph curation,
+   * not narrative memory. Memory hygiene is a separate routine.
+   *
+   * @param problemSetId - The problem set whose slice is being curated.
+   * @param cronOverride - Optional cron override. Defaults to every 4 hours.
+   */
+  async registerBrainCurator(problemSetId: string, cronOverride?: string): Promise<void> {
+    const DEFAULT_CRON = '0 */4 * * *'; // every 4 hours — slower than the watcher
+    const MIN_CRON = '*/30 * * * *';    // minimum 30 minutes (curator is heavier)
+    let cron = cronOverride ?? DEFAULT_CRON;
+
+    const minuteField = cron.split(' ')[0];
+    const intervalMatch = minuteField.match(/^\*\/(\d+)$/);
+    if (intervalMatch) {
+      const intervalMinutes = parseInt(intervalMatch[1], 10);
+      if (intervalMinutes < 30) {
+        console.warn(
+          `[routine-service] registerBrainCurator: cron interval ${intervalMinutes} min is below 30-min minimum. ` +
+          `Clamping to ${MIN_CRON}.`,
+        );
+        cron = MIN_CRON;
+      }
+    }
+
+    let fingerprint = '';
+    try {
+      const { buildScopeFingerprint } = await import('./scope-fingerprint.js');
+      fingerprint = await buildScopeFingerprint(problemSetId);
+    } catch (err) {
+      console.warn(
+        `[routine-service] registerBrainCurator: failed to build scope fingerprint for ${problemSetId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    const fingerprintBlock = fingerprint
+      ? `\n${fingerprint}\n`
+      : `\n[PROBLEM SET SCOPE FINGERPRINT — UNAVAILABLE]\nNo scoping interview has been run for this problem set. Be conservative — only sweep actors with workspaceId="${problemSetId}" until scoping is provided.\n`;
+
+    try {
+      await this.upsertRoutine({
+        name: `brain_curator__${problemSetId}`,
+        description: `Continuous brain slice curator for problem set ${problemSetId}. Pulls in-scope content from the global KG, fills intelligence gaps via web search and OSINT, prunes stale nodes.`,
+        userId: 'default',
+        cron,
+        prompt: `Brain slice curator cycle for problem_set_id="${problemSetId}". You are growing and maintaining the PS-specific knowledge graph slice — NOT writing memory documents.
+${fingerprintBlock}
+EXECUTE THE FOLLOWING SEQUENCE. Be terse. Skip steps where there is nothing to do.
+
+STEP 1 — Relevance sweep:
+Call bastion category=brain action=evaluate_relevance with problem_set_id="${problemSetId}". For each candidate scoring above the relevance threshold, call bastion category=brain action=augment_slice to pull it into the slice. Do not pull more than 10 actors per cycle.
+
+STEP 2 — Gap detection:
+Call bastion category=brain action=intelligence_gaps with problem_set_id="${problemSetId}". Then list active PIRs via bastion category=design action=list_pirs problem_set_id="${problemSetId}" status="ACTIVE". Pick the 1-2 highest-priority gaps that the scope fingerprint above suggests are answerable from open sources.
+
+STEP 3 — Targeted collection:
+For each selected gap, construct ONE web search query that combines: a primary actor or geographic term from the fingerprint + the gap topic + a recency filter. Call bastion category=intel action=web_search. Discard results obviously outside the scope (excluded actors, excluded geographies, wrong era).
+
+STEP 4 — Ingest into global KG:
+For each retained search result, call bastion category=intel action=create_research_event with the URL, title, and snippet, then bastion category=intel action=process_osint_event on the returned event id. This routes the content through RAFT extraction so new actors/relationships land in the global graph.
+
+STEP 5 — Re-sweep:
+Call bastion category=brain action=evaluate_relevance again so the freshly-extracted entities get pulled into the slice via augment_slice.
+
+STEP 6 — Prune:
+Call bastion category=brain action=get_slice_stats. If orphan_count > 5 or any actor in the slice is now clearly outside the scope fingerprint (excluded actor or excluded geography), call bastion category=brain action=prune_slice for those actor ids.
+
+STEP 7 — Log:
+Call bastion category=ops action=log_activity with a single line under 200 chars summarizing: gaps_found / events_ingested / actors_added / actors_pruned. Always include problem_set_id="${problemSetId}".
+
+CRITICAL CONSTRAINTS:
+- DO NOT call memory_write, memory_read, or any memory_* tool. Graph mutations only.
+- Hard cap: 12 tool calls per cycle. Stop early if the budget is exhausted.
+- If STEP 1 returns no candidates AND STEP 2 returns no gaps, respond "Slice stable — no curation needed." and stop.
+- Stay strictly within the scope fingerprint. Out-of-scope content is a bug, not a feature.
+- Response under 600 characters total.`,
+        cooldownSecs: 14400, // 4-hour cooldown matches default cadence
+      });
+      console.log(`[routine-service] Registered brain curator for problem set ${problemSetId} (${cron})`);
+    } catch (err) {
+      console.warn(
+        `[routine-service] Failed to register brain curator for ${problemSetId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
+   * Unregister the brain curator routine for a specific problem set.
+   * Call when a problem set is archived or deleted.
+   */
+  async unregisterBrainCurator(problemSetId: string): Promise<void> {
+    try {
+      await this.disableRoutine(`brain_curator__${problemSetId}`, 'default');
+      console.log(`[routine-service] Unregistered brain curator for problem set ${problemSetId}`);
+    } catch (err) {
+      console.warn(
+        `[routine-service] Failed to unregister brain curator for ${problemSetId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
+   * Re-register the brain curator with a freshly-rebuilt scope fingerprint.
+   * Called when the scoping interview is re-run so the new scope takes
+   * effect on the next curator fire.
+   */
+  async refreshBrainCuratorScope(problemSetId: string): Promise<void> {
+    try {
+      const { invalidateScopeFingerprint } = await import('./scope-fingerprint.js');
+      invalidateScopeFingerprint(problemSetId);
+      await this.registerBrainCurator(problemSetId);
+      console.log(`[routine-service] Refreshed brain curator scope for problem set ${problemSetId}`);
+    } catch (err) {
+      console.warn(
+        `[routine-service] Failed to refresh brain curator scope for ${problemSetId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
    * Register all custom routines for a user with Ironclaw.
    *
    * Called when a user's routines change or on startup to restore

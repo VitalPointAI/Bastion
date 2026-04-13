@@ -1387,6 +1387,12 @@ ironclawRouter.post(
         } catch (err) {
           console.warn(`[ironclaw-router] re-register: failed monitoring for ${row.id}:`, err instanceof Error ? err.message : err);
         }
+        try {
+          await routineService.registerBrainCurator(row.id);
+          registered.push(`brain_curator__${row.id}`);
+        } catch (err) {
+          console.warn(`[ironclaw-router] re-register: failed curator for ${row.id}:`, err instanceof Error ? err.message : err);
+        }
       }
 
       res.json({

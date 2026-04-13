@@ -515,6 +515,22 @@ export class InterviewService {
     // Persist to database
     await saveProblemSetContext(validated.data);
 
+    // Notify the brain curator that scope has changed — invalidates the
+    // cached fingerprint and re-registers the routine with the new scope
+    // so the next curator fire works against the updated boundaries.
+    // Fire-and-forget: this must never fail the interview save.
+    void (async () => {
+      try {
+        const { routineService } = await import('../../ironclaw/routine-service.js');
+        await routineService.refreshBrainCuratorScope(problemSetId);
+      } catch (err) {
+        console.warn(
+          '[InterviewService] Failed to refresh brain curator scope after interview save:',
+          err instanceof Error ? err.message : err,
+        );
+      }
+    })();
+
     return validated.data;
   }
 }

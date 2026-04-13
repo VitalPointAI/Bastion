@@ -705,6 +705,7 @@ server.listen(port, async () => {
     );
     for (const row of activePs.rows) {
       routineService.registerAutonomousMonitoring(row.id).catch(() => {/* logged inside */});
+      routineService.registerBrainCurator(row.id).catch(() => {/* logged inside */});
     }
 
     const totalRoutines = BUILT_IN_ROUTINES.filter(r => r.defaultCron).length + activePs.rows.length;
